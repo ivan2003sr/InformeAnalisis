@@ -40,7 +40,7 @@ def cargar_subanalisis_csv():
 
 RUTA_CSV = os.path.join(os.path.dirname(__file__), "../data/analisis_definiciones.csv")
 
-def guardar_nuevo_codigo(codigo, descripcion, referencia):
+def guardar_nuevo_codigo(codigo, descripcion, valores_referencia):
     existe = os.path.isfile(RUTA_CSV)
     with open(RUTA_CSV, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["codigo", "descripcion", "valores_referencia"])
@@ -49,5 +49,5 @@ def guardar_nuevo_codigo(codigo, descripcion, referencia):
         writer.writerow({
             "codigo": codigo,
             "descripcion": descripcion,
-            "valores_referencia": referencia
+            "valores_referencia": valores_referencia
         })
