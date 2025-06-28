@@ -102,6 +102,9 @@ class AnalisisFrame(tb.Frame):
         self.analisis_info = cargar_analisis_csv()
         self.subanalisis_info = cargar_subanalisis_csv()
         self.lista_analisis = []
+        self.var_protocolo = StringVar()
+        self.var_doctor = StringVar()
+        self.var_fecha_extraccion = StringVar()
         self.build_ui()
 
     def build_ui(self):
@@ -113,6 +116,15 @@ class AnalisisFrame(tb.Frame):
         # --- Input básico
         tb.Label(self, text="DNI del paciente").grid(row=0, column=0, sticky=W, padx=5, pady=5)
         tb.Entry(self, textvariable=self.var_dni).grid(row=0, column=1, sticky=EW, padx=5)
+
+        tb.Label(self, text="Protocolo").grid(row=1, column=2, sticky=W, padx=5, pady=5)
+        tb.Entry(self, textvariable=self.var_protocolo).grid(row=1, column=3, sticky=EW, padx=5)
+
+        tb.Label(self, text="Doctor/a").grid(row=2, column=2, sticky=W, padx=5, pady=5)
+        tb.Entry(self, textvariable=self.var_doctor).grid(row=2, column=3, sticky=EW, padx=5)
+
+        tb.Label(self, text="Fecha de extracción (YYYY-MM-DD)").grid(row=3, column=2, sticky=W, padx=5, pady=5)
+        tb.Entry(self, textvariable=self.var_fecha_extraccion).grid(row=3, column=3, sticky=EW, padx=5)
 
         tb.Label(self, text="Código de análisis").grid(row=1, column=0, sticky=W, padx=5, pady=5)
         entry_codigo = tb.Entry(self, textvariable=self.var_codigo)
@@ -214,7 +226,12 @@ class AnalisisFrame(tb.Frame):
         self.var_descripcion.set("")
 
     def imprimir_informe(self):
+        from logic.informes import generar_pdf_informe
         dni = self.var_dni.get().strip()
+        protocolo = self.var_protocolo.get().strip()
+        doctor = self.var_doctor.get().strip()
+        fecha_extraccion = self.var_fecha_extraccion.get().strip() or datetime.today().strftime('%Y-%m-%d')
+
         if not dni or not self.lista_analisis:
             messagebox.showwarning("Datos faltantes", "Debe ingresar un DNI válido y al menos un análisis.")
             return
@@ -224,8 +241,16 @@ class AnalisisFrame(tb.Frame):
             messagebox.showerror("Paciente no encontrado", "El DNI ingresado no está registrado.")
             return
 
+
+
         paciente['edad'] = self.calcular_edad(paciente['fecha_nacimiento'])
-        generar_pdf_informe(paciente, self.lista_analisis)
+        generar_pdf_informe(
+            paciente=paciente,
+            lista_analisis=self.lista_analisis,
+            protocolo=protocolo,
+            doctor=doctor,
+            fecha_extraccion=fecha_extraccion
+        )
 
         self.lista_analisis.clear()
         for item in self.tree.get_children():

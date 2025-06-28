@@ -1,11 +1,12 @@
 codigo_padre,nombre_subanalisis,valores_referencia
-475,Glóbulos Rojos,4.5-6.0 mill/L
-475,Hemoglobina,13-17 g/dL
-475,Hematocrito,40-54 %
-475,Glóbulos Blancos,4-10 mil/L
-475,Neutrófilos,40-75 %
-475,Linfocitos,20-45 %
-475,Monocitos,2-8 %
-475,Eosinófilos,1-4 %
-475,Basófilos,0-1 %
-475,Plaquetas,150-400 mil/L
+475,Hematíes por u/l,H. 5.000.000 - M. 4.500.000
+475,Hemoglobina en gr/dl,H. 15.40 - M. 14.50 g.
+475,Volumen globular % (Hto.),H. 45.5 % - M. 40 %. 
+475,Leucocitos,5000 - 10.000
+475,Metamielocitos,0 - 1
+475,Con núcleo en cayado,3 - 6
+475,Con núcleo segmentados,55 - 65
+475,Granulocitos eosinófilos,2 - 4
+475,Granulocitos basófilos,0 - 1
+475,Linfocitos,10 - 30
+475,Monocitos,4 - 8
