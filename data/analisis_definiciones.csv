@@ -1,8 +1,8 @@
-codigo,descripcion,valores_referencia
-1070,Hemoglobina,13-17 g/dL
-412,Glucosa,70-100 mg/dL
-902,Urea,15-50 mg/dL
-1020,OTRO ANÁLISIS,15 G/L
-475,hemograma,
-845,Analizando,45-85 g/L
-85,prueba,123 g/l
+codigo;descripcion;valores_referencia
+1070;Hemoglobina;13-17 g/dL
+412;Dosaje de glucosas. Técnica fotométrica enzimática de la glucosa oxidasa.;0,70-1,10 g/l.
+902;Urea;15-50 mg/dL
+1020;OTRO ANÁLISIS;15 G/L
+475;hemograma;
+845;Analizando;45-85 g/L
+85;prueba;123 g/l

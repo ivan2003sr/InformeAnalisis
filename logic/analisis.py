@@ -10,7 +10,7 @@ def cargar_analisis_csv():
         return analisis_info
 
     with open(ANALISIS_CSV, newline='', encoding='utf-8') as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(csvfile, delimiter=';')
         for row in reader:
             codigo = row['codigo'].strip()
             analisis_info[codigo] = {
@@ -25,7 +25,7 @@ def cargar_subanalisis_csv():
         return subanalisis_info
 
     with open(SUBANALISIS_CSV, newline='', encoding='utf-8') as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(csvfile, delimiter=';')
         for row in reader:
             codigo_padre = row['codigo_padre'].strip()
             nombre = row['nombre_subanalisis'].strip()

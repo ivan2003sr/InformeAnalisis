@@ -1,12 +1,12 @@
-codigo_padre,nombre_subanalisis,valores_referencia
-475,Hematíes por u/l,H. 5.000.000 - M. 4.500.000
-475,Hemoglobina en gr/dl,H. 15.40 - M. 14.50 g.
-475,Volumen globular % (Hto.),H. 45.5 % - M. 40 %. 
-475,Leucocitos,5000 - 10.000
-475,Metamielocitos,0 - 1
-475,Con núcleo en cayado,3 - 6
-475,Con núcleo segmentados,55 - 65
-475,Granulocitos eosinófilos,2 - 4
-475,Granulocitos basófilos,0 - 1
-475,Linfocitos,10 - 30
-475,Monocitos,4 - 8
+codigo_padre;nombre_subanalisis;valores_referencia
+475;Hematíes por u/l;H. 5.000.000 - M. 4.500.000
+475;Hemoglobina en gr/dl;H. 15,40 - M. 14,50 g.
+475;Volumen globular % (Hto.);H. 45,50% - M. 40%. 
+475;Leucocitos;5000 - 10.000
+475;Metamielocitos;0 - 1
+475;Con núcleo en cayado;3 - 6
+475;Con núcleo segmentados;55 - 65
+475;Granulocitos eosinófilos;2 - 4
+475;Granulocitos basófilos;0 - 1
+475;Linfocitos;10 - 30
+475;Monocitos;4 - 8
