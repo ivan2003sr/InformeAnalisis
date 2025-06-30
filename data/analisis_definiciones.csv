@@ -1,8 +1,7 @@
-codigo;descripcion;valores_referencia
-1070;Hemoglobina;13-17 g/dL
-412;Dosaje de glucosas. Técnica fotométrica enzimática de la glucosa oxidasa.;0,70-1,10 g/l.
-902;Urea;15-50 mg/dL
-1020;OTRO ANÁLISIS;15 G/L
-475;hemograma;
-845;Analizando;45-85 g/L
-85;prueba;123 g/l
+codigo;descripcion;tecnica;valores_referencia;unidades
+412;Dosaje de glucosa.; Técnica fotométrica enzimática de la glucosa oxidasa.;0,70-1,10;g/l
+475;hemograma;;;
+902;Dosaje de urea.;Técnica fotométrica enzimática de la ureasa de Fawcet.;0,15-0,45;g/l
+192;Dosaje de creatinina.;Técnica fotométrica de Owens.;0,80 - 1,40;mg/dL
+746;Plaquetas;;250.000 - 500.000;u/l
+15;Albúminas;;3,5 - 4,8;g/dl

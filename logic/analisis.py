@@ -15,7 +15,9 @@ def cargar_analisis_csv():
             codigo = row['codigo'].strip()
             analisis_info[codigo] = {
                 'descripcion': row['descripcion'].strip(),
-                'valores_referencia': row['valores_referencia'].strip()
+                'tecnica': row['tecnica'].strip(),
+                'valores_referencia': row['valores_referencia'],
+                'unidades': row['unidades'].strip()
             }
     return analisis_info
 
@@ -40,14 +42,16 @@ def cargar_subanalisis_csv():
 
 RUTA_CSV = os.path.join(os.path.dirname(__file__), "../data/analisis_definiciones.csv")
 
-def guardar_nuevo_codigo(codigo, descripcion, valores_referencia):
+def guardar_nuevo_codigo(codigo, descripcion, tecnica, valores_referencia, unidades):
     existe = os.path.isfile(RUTA_CSV)
     with open(RUTA_CSV, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["codigo", "descripcion", "valores_referencia"])
+        writer = csv.DictWriter(f, fieldnames=["codigo", "descripcion", "tecnica", "valores_referencia", "unidades"], delimiter=";")
         if not existe:
             writer.writeheader()
         writer.writerow({
             "codigo": codigo,
             "descripcion": descripcion,
-            "valores_referencia": valores_referencia
+            "tecnica": tecnica,
+            "valores_referencia": valores_referencia,
+            "unidades": unidades
         })

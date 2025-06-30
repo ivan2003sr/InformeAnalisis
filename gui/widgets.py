@@ -171,9 +171,12 @@ class AnalisisFrame(tb.Frame):
             if modal.resultado:
                 from logic.analisis import guardar_nuevo_codigo
                 guardar_nuevo_codigo(**modal.resultado)
+                # Guardar TODOS los campos en analisis_info
                 self.analisis_info[codigo] = {
                     "descripcion": modal.resultado["descripcion"],
-                    "valores_referencia": modal.resultado["valores_referencia"]
+                    "tecnica": modal.resultado.get("tecnica", ""),
+                    "valores_referencia": modal.resultado["valores_referencia"],
+                    "unidades": modal.resultado.get("unidades", "")
                 }
                 self.var_descripcion.set(f"→ {modal.resultado['descripcion']}")
             else:
@@ -189,9 +192,11 @@ class AnalisisFrame(tb.Frame):
         if not codigo:
             messagebox.showwarning("Datos requeridos", "Debe ingresar un código de análisis.")
             return
-
-        desc = self.analisis_info.get(codigo, {}).get("descripcion", "Sin descripción")
-        ref = self.analisis_info.get(codigo, {}).get("valores_referencia", "-")
+        analisis_data = self.analisis_info.get(codigo, {})
+        desc = analisis_data.get("descripcion", "Sin descripción")
+        tecnica = analisis_data.get("tecnica", "")
+        ref = analisis_data.get("valores_referencia", "-")
+        unidades = analisis_data.get("unidades", "")
 
         # Si tiene subanálisis, mostrar modal
         if codigo in self.subanalisis_info:
@@ -216,8 +221,11 @@ class AnalisisFrame(tb.Frame):
             self.lista_analisis.append({
                 'codigo': codigo,
                 'descripcion': desc,
+                'tecnica': tecnica,
                 'valor': valor,
-                'referencia': ref
+                'referencia': ref,
+                'unidades': unidades,
+                'valores_referencia': ref 
             })
             self.tree.insert("", "end", values=(codigo, desc, valor, ref))
 

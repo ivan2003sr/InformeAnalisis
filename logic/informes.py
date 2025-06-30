@@ -1,10 +1,16 @@
 import os
 from datetime import datetime
-from fpdf import FPDF
+from fpdf import FPDF, HTMLMixin
+from html import escape
 import webbrowser
 
-class PDF(FPDF):
+class PDF(FPDF, HTMLMixin):
+
     def header(self):
+        logo_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'logo.png')
+        if os.path.exists(logo_path):
+            x_pos = self.w - 30 - 30  
+            self.image(logo_path, x=x_pos, y=8, w=30)
         self.set_font('Arial', 'BU', 15)
         self.cell(0, 6, "LABORATORIO DE ANÁLISIS CLÍNICOS", 0, 1, 'L')
         self.set_font('Arial', 'B', 10)
@@ -26,8 +32,18 @@ def format_fecha(fecha_str):
         return fecha_obj.strftime('%d/%m/%Y')
     except:
         return fecha_str
+    
+def formatear_valor(valor):
+    try:
+        num = float(valor)
+        if num.is_integer():
+            return f"{int(num):,}".replace(",", ".")
+        else:
+            return f"{num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except:
+        return str(valor)
 
-def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extraccion, logo_path=None):
+def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extraccion):
     
     from collections import defaultdict
     
@@ -59,11 +75,6 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
 
         return grupos
     
-    # Configuración del logo (si se desea usar luego)
-    if logo_path is None:
-        logo_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'logo.png')
-        if not os.path.exists(logo_path):
-            logo_path = None
 
     # Crear carpeta para el paciente
     carpeta_nombre = f"{paciente['apellido'].upper()}-{paciente['nombre'].upper()}-{paciente['dni']}"
@@ -82,15 +93,36 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
 
     # Información del paciente
     pdf.set_font('Arial', '', 9)
-    pdf.cell(0, 4, f"Protocolo: {protocolo}", ln=1)
-    pdf.cell(0, 4, f"Perteneciente a: {paciente['apellido']}, {paciente['nombre']}", ln=1)
-    pdf.cell(0, 4, f"DNI: {paciente['dni']}", ln=1)
-    pdf.cell(0, 4, f"Fecha de nacimiento: {fecha_nacimiento_fmt}", ln=1)
-    pdf.cell(0, 4, f"Edad: {paciente['edad']} años", ln=1)
-    pdf.cell(0, 4, f"Doctor/a: {doctor}", ln=1)
-    pdf.cell(0, 4, f"Fecha de extracción: {fecha_extraccion_fmt}", ln=1)
-    pdf.cell(0, 4, f"Fecha de impresión: {fecha_impresion}", ln=1)
+    pdf.write(4, "Protocolo: ")
+    pdf.set_font('Arial', 'B', 9)
+    pdf.write(4, f"{formatear_valor(protocolo)}\n")
+
+    pdf.set_font('Arial', '', 9)
+    pdf.write(4, "Perteneciente a: ")
+    pdf.set_font('Arial', 'B', 9)
+    pdf.write(4, f"{paciente['apellido']}, {paciente['nombre']}\n")
+
+    pdf.set_font('Arial', '', 9)
+    pdf.write(4, "DNI: ")
+    pdf.set_font('Arial', 'B', 9)
+    pdf.write(4, f"{paciente['dni']} ")
+    pdf.set_font('Arial', '', 9)
+    pdf.write(4, "Edad: ")
+    pdf.set_font('Arial', 'B', 9)
+    pdf.write(4, f"{paciente['edad']} años\n")
+
+    pdf.set_font('Arial', '', 9)
+    pdf.write(4, "Doctor/a: ")
+    pdf.set_font('Arial', 'B', 9)
+    pdf.write(4, f"{doctor}\n")
+
+    pdf.set_font('Arial', '', 9)
+    pdf.write(4, "Fecha de extracción: ")
+    pdf.set_font('Arial', 'B', 9)
+    pdf.write(4, f"{fecha_extraccion_fmt}\n")
+
     pdf.ln(10)
+
 
     hemograma = [a for a in lista_analisis if a['codigo'] == "475"]
     otros = [a for a in lista_analisis if a['codigo'] != "475"]
@@ -123,16 +155,6 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
                 pdf.cell(0, 3, subtitulo, ln=1)
 
             # DETALLES
-
-            def formatear_valor(valor):
-                try:
-                    num = float(valor)
-                    if num.is_integer():
-                        return f"{int(num):,}".replace(",", ".")
-                    else:
-                        return f"{num:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                except:
-                    return str(valor)
 
             for item in items:
                 desc = item['descripcion']
@@ -182,32 +204,36 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
 
 
 
-        
-
     # Otros análisis
     if otros:
+        
         pdf.ln(5)
-        pdf.set_font('Arial', 'B', 12)
-        pdf.cell(0, 10, "OTROS ANÁLISIS", 0, 1)
-        pdf.set_font('Arial', '', 11)
-        pdf.set_fill_color(200, 220, 255)
-        pdf.cell(80, 10, "Análisis", 1, 0, 'C', True)
-        pdf.cell(30, 10, "Valor", 1, 0, 'C', True)
-        pdf.cell(50, 10, "Referencia", 1, 1, 'C', True)
+        def dibujar_separador(pdf):
+            pdf.ln(1)
+            y = pdf.get_y()
+            pdf.line(10, y, 200, y)
+            pdf.ln(1)
 
         fill = False
         for analisis in otros:
-            valor = str(analisis['valor'])
-            referencia = analisis['referencia']
-            partes = referencia.rsplit(' ', 1)
-            valor_unidades = f"{valor}"
-            if len(partes) == 2 and any(c.isalpha() for c in partes[1]):
-                valor_unidades += f" {partes[1]}"
-            pdf.set_fill_color(240, 240, 240) if fill else pdf.set_fill_color(255, 255, 255)
-            pdf.cell(80, 8, analisis['descripcion'], 1, 0, 'L', fill)
-            pdf.cell(30, 8, valor_unidades, 1, 0, 'C', fill)
-            pdf.cell(50, 8, referencia, 1, 1, 'C', fill)
-            fill = not fill
+            dibujar_separador(pdf)
+            pdf.set_font('Arial', '', 11)
+            # Obtener datos del análisis
+            descripcion = analisis['descripcion'].strip()
+            tecnica = analisis['tecnica'].strip()
+            valor = formatear_valor(analisis['valor']).strip()
+            ref = analisis['valores_referencia'].strip()
+            unidades = analisis['unidades'].strip() 
+            
+            # Construir el texto formateado
+            linea1 = f"{escape(descripcion)} {escape(tecnica)}"
+            valor_html = f"<b>{escape(valor)} {escape(unidades)}</b>"
+            normal_html = f"{escape(ref)} {escape(unidades)}"
+            linea2_html = f"Resultado: {valor_html} - Normal: {normal_html}"
+
+            pdf.multi_cell(0, 4, linea1, 0, 'L')
+            pdf.write_html(f"<font face='Arial' size='11'>{linea2_html}</font>")
+            pdf.ln(2)
 
 
     # Firma
