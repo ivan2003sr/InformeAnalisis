@@ -5,3 +5,7 @@ codigo;descripcion;tecnica;valores_referencia;unidades
 192;Dosaje de creatinina.;Técnica fotométrica de Owens.;0,80 - 1,40;mg/dL
 746;Plaquetas;;250.000 - 500.000;u/l
 15;Albúminas;;3,5 - 4,8;g/dl
+904;Dosaje de ácido úrico.;Técnica fotométrica enzimática.;Hombres 2,5 - 6,0 mg/dL. Mujeres 1,5 - 5,0;mg/dL
+1040;Colesterol LDL.;Técnica fotométrica de Burstein.;Sospechoso a partir de 1,50 g/l. Elevado a partir de 1,90;g/l
+193;Clearence de creatinina,;;80 - 140;ml/minuto.
+711;orina;;;

@@ -1,4 +1,6 @@
 import os
+import locale
+locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')  # Configurar locale para Argentina
 from datetime import datetime
 from fpdf import FPDF, HTMLMixin
 from html import escape
@@ -25,6 +27,10 @@ class PDF(FPDF, HTMLMixin):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
         self.cell(0, 10, f'Página {self.page_no()}/{{nb}}', 0, 0, 'C')
+
+    def check_page_break(self, threshold=15):
+        if self.y + threshold > self.page_break_trigger:
+            self.add_page()
 
 def format_fecha(fecha_str):
     try:
@@ -55,9 +61,9 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
         grupos = {
             "SERIE ROJA": [],
             "SERIE BLANCA": [],
-            "FORMULA LEUCOCITARIA - SISTEMA MIELOIDE": [],
-            "FORMULA LEUCOCITARIA - SISTEMA LINFOIDE": [],
-            "FORMULA LEUCOCITARIA - SISTEMA RETICULO ENDOTELIAL": []
+            "FÓRMULA LEUCOCITARIA - SISTEMA MIELOIDE": [],
+            "FÓRMULA LEUCOCITARIA - SISTEMA LINFOIDE": [],
+            "FÓRMULA LEUCOCITARIA - SISTEMA RETICULO ENDOTELIAL": []
         }
 
         for item in analisis:
@@ -67,14 +73,31 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
             elif "leucocitos" in desc and "segmentado" not in desc and "cayado" not in desc:
                 grupos["SERIE BLANCA"].append(item)
             elif any(k in desc for k in ["metamielocitos", "cayado", "segmentados", "eosinófilos", "basófilos"]):
-                grupos["FORMULA LEUCOCITARIA - SISTEMA MIELOIDE"].append(item)
+                grupos["FÓRMULA LEUCOCITARIA - SISTEMA MIELOIDE"].append(item)
             elif "linfocitos" in desc:
-                grupos["FORMULA LEUCOCITARIA - SISTEMA LINFOIDE"].append(item)
+                grupos["FÓRMULA LEUCOCITARIA - SISTEMA LINFOIDE"].append(item)
             elif "monocitos" in desc:
-                grupos["FORMULA LEUCOCITARIA - SISTEMA RETICULO ENDOTELIAL"].append(item)
+                grupos["FÓRMULA LEUCOCITARIA - SISTEMA RETICULO ENDOTELIAL"].append(item)
 
         return grupos
     
+    def agrupar_orina_por_seccion(analisis):
+        grupos = {
+            "EXAMEN FÍSICO": [],
+            "EXAMEN QUÍMICO": [],
+            "EXAMEN MICROSCÓPICO": [],
+        }
+
+        for item in analisis:
+            desc = item['descripcion'].lower()
+            if any(k in desc for k in ["color", "aspecto", "espuma", "sedimento", "densidad", "reaccion", "ph"]):
+                grupos["EXAMEN FÍSICO"].append(item)
+            elif any(k in desc for k in ["protTotales", "hemoglobina", "glucosa", "acetona", "pigmentosBiliares", "acidosBiliares", "urobilina"]):
+                grupos["EXAMEN QUÍMICO"].append(item)
+            else:
+                grupos["EXAMEN MICROSCÓPICO"].append(item)
+
+        return grupos
 
     # Crear carpeta para el paciente
     carpeta_nombre = f"{paciente['apellido'].upper()}-{paciente['nombre'].upper()}-{paciente['dni']}"
@@ -87,6 +110,7 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
 
     # Crear PDF
     pdf = PDF()
+    locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')  # Asegurarse de que el locale esté configurado
     pdf.alias_nb_pages()
     pdf.add_page()
     pdf.set_font("Arial", size=11)
@@ -125,16 +149,49 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
 
 
     hemograma = [a for a in lista_analisis if a['codigo'] == "475"]
-    otros = [a for a in lista_analisis if a['codigo'] != "475"]
+    orina = [a for a in lista_analisis if a['codigo'] == "711"]
+    otros = [a for a in lista_analisis if a['codigo'] not in ("475", "711")]
+
+    
+    if orina:
+        pdf.check_page_break(30)
+        pdf.set_font('Times', 'BU', 12)
+        pdf.cell(0, 8, "ANÁLISIS DE ORINA", ln=1)
+
+        grupos = agrupar_orina_por_seccion(orina)
+
+        for titulo, items in grupos.items():
+            pdf.check_page_break(15 + len(items) * 3)
+            pdf.set_font('Times', 'BU', 11)
+            pdf.cell(0, 6, titulo, ln=1)
+
+            pdf.set_font('Courier', '', 10)
+            for item in items:
+                desc = item['descripcion'].strip()
+                valor = formatear_valor(item['valor'])
+
+                puntos = '.' * max(3, 30 - len(desc))
+                texto = f"{desc} {puntos}  "
+
+                pdf.set_font('Courier', '', 10)
+                pdf.write(4, texto)
+
+                pdf.set_font('Courier', 'B', 10)
+                pdf.write(4, f"{valor}\n")
+
+        pdf.ln(4)
 
     if hemograma:
+        pdf.check_page_break(30)
         pdf.set_font('Times', 'BU', 12)
         pdf.cell(0, 8, "HEMOGRAMA", ln=1)
 
         grupos = agrupar_hemograma_por_seccion(hemograma)
-        ya_mostro_formula = False  # para no repetir FORMULA LEUCOCITARIA
+        ya_mostro_formula = False  # para no repetir FÓRMULA LEUCOCITARIA
 
         for titulo, items in grupos.items():
+
+            pdf.check_page_break(15 + len(items) * 3)
             # TITULARES
             if titulo == "SERIE ROJA":
                 pdf.set_font('Times', 'BU', 11)
@@ -145,10 +202,10 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
             elif titulo == "SERIE BLANCA":
                 pdf.set_font('Times', 'BU', 11)
                 pdf.cell(0, 4, titulo, ln=1)
-            elif titulo.startswith("FORMULA LEUCOCITARIA"):
+            elif titulo.startswith("FÓRMULA LEUCOCITARIA"):
                 if not ya_mostro_formula:
                     pdf.set_font('Times', 'BU', 11)
-                    pdf.cell(0, 4, "FORMULA LEUCOCITARIA", ln=1)
+                    pdf.cell(0, 4, "FÓRMULA LEUCOCITARIA", ln=1)
                     ya_mostro_formula = True
                 subtitulo = titulo.split(" - ")[1]
                 pdf.set_font('Times', 'BU', 10)
@@ -216,20 +273,28 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
 
         fill = False
         for analisis in otros:
+            pdf.check_page_break(20)
+
+
             dibujar_separador(pdf)
             pdf.set_font('Arial', '', 11)
             # Obtener datos del análisis
             descripcion = analisis['descripcion'].strip()
             tecnica = analisis['tecnica'].strip()
-            valor = formatear_valor(analisis['valor']).strip()
+            valor = analisis['valor'].strip()
             ref = analisis['valores_referencia'].strip()
             unidades = analisis['unidades'].strip() 
+            codigo = analisis['codigo'].strip()
             
             # Construir el texto formateado
             linea1 = f"{escape(descripcion)} {escape(tecnica)}"
             valor_html = f"<b>{escape(valor)} {escape(unidades)}</b>"
             normal_html = f"{escape(ref)} {escape(unidades)}"
-            linea2_html = f"Resultado: {valor_html} - Normal: {normal_html}"
+
+            if codigo == "1040":
+                linea2_html = f"Resultado: {valor_html} - {normal_html}"
+            else:
+                linea2_html = f"Resultado: {valor_html} - Normal: {normal_html}"
 
             pdf.multi_cell(0, 4, linea1, 0, 'L')
             pdf.write_html(f"<font face='Arial' size='11'>{linea2_html}</font>")

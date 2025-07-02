@@ -140,7 +140,7 @@ class AnalisisFrame(tb.Frame):
         tb.Button(self, text="Agregar a la lista", bootstyle="primary", command=self.agregar_analisis).grid(row=4, column=0, columnspan=2, pady=10)
 
         # --- Tabla
-        self.tree = tb.Treeview(self, columns=("Código", "Descripción", "Valor", "Referencia"), show="headings", height=10)
+        self.tree = tb.Treeview(self, columns=("Código", "Descripción"), show="headings", height=10)
         self.menu_ctx = tb.Menu(self, tearoff=0)
         self.menu_ctx.add_command(label="Eliminar análisis", command=self.eliminar_analisis)
 
@@ -212,12 +212,13 @@ class AnalisisFrame(tb.Frame):
                         'valor': val,
                         'referencia': sub['valores_referencia']
                     })
-                    self.tree.insert("", "end", values=(codigo, sub['nombre'], val, sub['valores_referencia']))
+                    self.tree.insert("", "end", values=(codigo, sub['nombre']))
         else:
             if not valor:
                 messagebox.showwarning("Dato requerido", "Debe ingresar el valor del análisis.")
                 return
-
+            
+            self.eliminar_analisis_por_codigo(codigo)
             self.lista_analisis.append({
                 'codigo': codigo,
                 'descripcion': desc,
@@ -227,7 +228,7 @@ class AnalisisFrame(tb.Frame):
                 'unidades': unidades,
                 'valores_referencia': ref 
             })
-            self.tree.insert("", "end", values=(codigo, desc, valor, ref))
+            self.tree.insert("", "end", values=(codigo, desc))
 
         self.var_codigo.set("")
         self.var_valor.set("")
@@ -285,10 +286,14 @@ class AnalisisFrame(tb.Frame):
             return
         for item in selected:
             valores = self.tree.item(item, "values")
-            self.lista_analisis = [a for a in self.lista_analisis if not (
-                a['codigo'] == valores[0] and a['descripcion'] == valores[1] and str(a['valor']) == valores[2]
-            )]
+            codigo = valores[0]
+            descripcion = valores[1]
+            self.lista_analisis = [
+                a for a in self.lista_analisis
+                if not (a['codigo'] == codigo and a['descripcion'] == descripcion)
+            ]
             self.tree.delete(item)
+
     def verificar_codigo(self, event=None):
         codigo = self.var_codigo.get().strip()
         if not codigo:
@@ -310,6 +315,45 @@ class AnalisisFrame(tb.Frame):
                 self.var_descripcion.set(f"→ {modal.resultado['descripcion']}")
             else:
                 self.var_descripcion.set("Código no reconocido.")
+                return
         else:
             desc = self.analisis_info[codigo]["descripcion"]
             self.var_descripcion.set(f"→ {desc}")
+
+        if codigo in self.subanalisis_info:
+            subanals = self.subanalisis_info[codigo]
+            # Buscar si ya se cargó este código
+            valores_precargados = []
+            for sub in subanals:
+                encontrado = next((a for a in self.lista_analisis
+                                if a['codigo'] == codigo and a['descripcion'] == sub['nombre']), None)
+                valores_precargados.append(encontrado['valor'] if encontrado else "")
+
+            modal = VentanaSubanalisis(self, codigo, subanals, valores_precargados)
+            self.wait_window(modal)
+
+            if modal.resultado:
+                self.eliminar_analisis_por_codigo(codigo)
+                for sub, val in zip(subanals, modal.resultado):
+                    self.lista_analisis.append({
+                        'codigo': codigo,
+                        'descripcion': sub['nombre'],
+                        'valor': val,
+                        'referencia': sub['valores_referencia']
+                    })
+                self.tree.insert("", "end", values=(codigo, sub['nombre'], val, sub['valores_referencia']))
+
+                # Limpiar campos
+                self.var_codigo.set("")
+                self.var_valor.set("")
+                self.var_descripcion.set("")
+
+    def eliminar_analisis_por_codigo(self, codigo):
+    # Eliminar del Treeview
+        for item in self.tree.get_children():
+            valores = self.tree.item(item, "values")
+            if valores[0] == codigo:
+                self.tree.delete(item)
+
+    # Eliminar de la lista
+        self.lista_analisis = [a for a in self.lista_analisis if a['codigo'] != codigo]

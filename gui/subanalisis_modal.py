@@ -3,7 +3,7 @@ from tkinter import Toplevel, StringVar, messagebox
 
 
 class VentanaSubanalisis(Toplevel):
-    def __init__(self, parent, codigo, lista_subanalisis):
+    def __init__(self, parent, codigo, lista_subanalisis, valores_precargados=None):
         super().__init__(parent)
         self.title(f"Subanálisis - Código {codigo}")
         self.transient(parent)
@@ -18,10 +18,15 @@ class VentanaSubanalisis(Toplevel):
         frame.pack(padx=10, pady=5)
 
         for i, sub in enumerate(lista_subanalisis):
-            var = StringVar()
+            valor_inicial = sub.get("valor_por_defecto", "")
+            if valores_precargados and i < len(valores_precargados):
+                if valores_precargados[i].strip():  # si no está vacío
+                    valor_inicial = valores_precargados[i]
+            var = StringVar(value=valor_inicial)
             self.vars.append(var)
             tb.Label(frame, text=sub["nombre"]).grid(row=i, column=0, sticky="w", padx=5, pady=2)
             tb.Entry(frame, textvariable=var).grid(row=i, column=1, padx=5, pady=2)
+
 
         btn_frame = tb.Frame(self)
         btn_frame.pack(pady=10)

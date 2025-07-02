@@ -32,11 +32,14 @@ def cargar_subanalisis_csv():
             codigo_padre = row['codigo_padre'].strip()
             nombre = row['nombre_subanalisis'].strip()
             ref = row['valores_referencia'].strip()
+            valor_default = row.get('valor_por_defecto', '').strip()
+
             if codigo_padre not in subanalisis_info:
                 subanalisis_info[codigo_padre] = []
             subanalisis_info[codigo_padre].append({
                 'nombre': nombre,
-                'valores_referencia': ref
+                'valores_referencia': ref,
+                'valor_por_defecto': valor_default
             })
     return subanalisis_info
 
