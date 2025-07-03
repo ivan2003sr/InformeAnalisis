@@ -113,26 +113,39 @@ class AnalisisFrame(tb.Frame):
         self.var_valor = StringVar()
         self.var_descripcion = StringVar()
 
-        # --- Input básico
+        # Fila 0
         tb.Label(self, text="DNI del paciente").grid(row=0, column=0, sticky=W, padx=5, pady=5)
-        tb.Entry(self, textvariable=self.var_dni).grid(row=0, column=1, sticky=EW, padx=5)
+        entry_dni = tb.Entry(self, textvariable=self.var_dni)
+        entry_dni.grid(row=0, column=1, sticky=EW, padx=5)
 
-        tb.Label(self, text="Protocolo").grid(row=1, column=2, sticky=W, padx=5, pady=5)
-        tb.Entry(self, textvariable=self.var_protocolo).grid(row=1, column=3, sticky=EW, padx=5)
+        tb.Label(self, text="Protocolo").grid(row=0, column=2, sticky=W, padx=5, pady=5)
+        entry_protocolo = tb.Entry(self, textvariable=self.var_protocolo)
+        entry_protocolo.grid(row=0, column=3, sticky=EW, padx=5)
 
-        tb.Label(self, text="Doctor/a").grid(row=2, column=2, sticky=W, padx=5, pady=5)
-        tb.Entry(self, textvariable=self.var_doctor).grid(row=2, column=3, sticky=EW, padx=5)
-
-        tb.Label(self, text="Fecha de extracción (YYYY-MM-DD)").grid(row=3, column=2, sticky=W, padx=5, pady=5)
-        tb.Entry(self, textvariable=self.var_fecha_extraccion).grid(row=3, column=3, sticky=EW, padx=5)
-
+        # Fila 1
         tb.Label(self, text="Código de análisis").grid(row=1, column=0, sticky=W, padx=5, pady=5)
         entry_codigo = tb.Entry(self, textvariable=self.var_codigo)
         entry_codigo.grid(row=1, column=1, sticky=EW, padx=5)
         entry_codigo.bind("<FocusOut>", self.verificar_codigo)
 
+        tb.Label(self, text="Doctor/a").grid(row=1, column=2, sticky=W, padx=5, pady=5)
+        entry_doctor = tb.Entry(self, textvariable=self.var_doctor)
+        entry_doctor.grid(row=1, column=3, sticky=EW, padx=5)
+
+        # Fila 2
         tb.Label(self, text="Valor").grid(row=2, column=0, sticky=W, padx=5, pady=5)
-        tb.Entry(self, textvariable=self.var_valor).grid(row=2, column=1, sticky=EW, padx=5)
+        entry_valor = tb.Entry(self, textvariable=self.var_valor)
+        entry_valor.grid(row=2, column=1, sticky=EW, padx=5)
+
+        tb.Label(self, text="Fecha de extracción (YYYY-MM-DD)").grid(row=2, column=2, sticky=W, padx=5, pady=5)
+        entry_fecha = tb.Entry(self, textvariable=self.var_fecha_extraccion)
+        entry_fecha.grid(row=2, column=3, sticky=EW, padx=5)
+
+        entry_dni.bind("<Tab>", lambda e: (entry_codigo.focus_set(), "break")[1])
+        entry_codigo.bind("<Tab>", lambda e: (entry_valor.focus_set(), "break")[1])
+        entry_valor.bind("<Tab>", lambda e: (entry_protocolo.focus_set(), "break")[1])
+        entry_protocolo.bind("<Tab>", lambda e: (entry_doctor.focus_set(), "break")[1])
+        entry_doctor.bind("<Tab>", lambda e: (entry_fecha.focus_set(), "break")[1])
 
         self.lbl_desc = tb.Label(self, textvariable=self.var_descripcion, foreground="blue")
         self.lbl_desc.grid(row=3, column=0, columnspan=2, sticky=W, padx=5)
@@ -203,9 +216,12 @@ class AnalisisFrame(tb.Frame):
             subanals = self.subanalisis_info[codigo]
             modal = VentanaSubanalisis(self, codigo, subanals)
             self.wait_window(modal)
+            self.entry_codigo.focus_set()
 
             if modal.resultado:
                 for sub, val in zip(subanals, modal.resultado):
+                    if not val.strip():
+                        continue
                     self.lista_analisis.append({
                         'codigo': codigo,
                         'descripcion': sub['nombre'],
@@ -304,6 +320,7 @@ class AnalisisFrame(tb.Frame):
             from gui.definir_codigo_modal import AgregarCodigoModal
             modal = AgregarCodigoModal(self, codigo)
             self.wait_window(modal)
+            self.entry_codigo.focus_set()
 
             if modal.resultado:
                 from logic.analisis import guardar_nuevo_codigo
@@ -335,6 +352,8 @@ class AnalisisFrame(tb.Frame):
             if modal.resultado:
                 self.eliminar_analisis_por_codigo(codigo)
                 for sub, val in zip(subanals, modal.resultado):
+                    if not val.strip():
+                        continue
                     self.lista_analisis.append({
                         'codigo': codigo,
                         'descripcion': sub['nombre'],

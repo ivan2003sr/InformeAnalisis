@@ -11,8 +11,9 @@ class PDF(FPDF, HTMLMixin):
     def header(self):
         logo_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'logo.png')
         if os.path.exists(logo_path):
-            x_pos = self.w - 30 - 30  
-            self.image(logo_path, x=x_pos, y=8, w=30)
+
+            #Alinear logo a la derecha
+            self.image(logo_path, x=self.w - 40, y=5, w=30)
         self.set_font('Arial', 'BU', 15)
         self.cell(0, 6, "LABORATORIO DE ANÁLISIS CLÍNICOS", 0, 1, 'L')
         self.set_font('Arial', 'B', 10)
@@ -20,7 +21,6 @@ class PDF(FPDF, HTMLMixin):
         self.set_font('Arial', 'B', 8)
         self.cell(0, 4, "OLASCOAGA 237 - TEL. 0260 - 4422824", 0, 1, 'L')
         self.set_font('Arial', 'I', 8)
-        self.cell(0, 10, f'PÁGINA {self.page_no()}/{{nb}}', 0, 0, 'R')
         self.ln(5)
 
     def footer(self):

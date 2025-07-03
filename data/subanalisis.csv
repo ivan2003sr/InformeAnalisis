@@ -11,23 +11,27 @@ codigo_padre;nombre_subanalisis;valores_referencia;valor_por_defecto
 475;Linfocitos;10 - 30;
 475;Monocitos;4 - 8;
 711;Color;;amarillo
-711;Aspecto;;turbio
+711;Aspecto;;límpido
 711;Espuma;;blanca
 711;Sedimento;;ausencia
-711;Densidad 15° C;;1.028
+711;Densidad 15° C;;
 711;Reacción (Tornasol);;ácida
-711;p.H.;;6,0
+711;p.H.;;
 711;Proteínas totales;;ausencia
 711;Hemoglobina;;ausencia
 711;Glucosa;;ausencia
 711;Acetona;;ausencia
 711;Pigmentos biliares;;ausencia
 711;Ácidos biliares;;ausencia
-711;Urobilina;;vestig. normales
+711;Urobilina;;vestigios normales
 711;Células epiteliales planas;;escasas
-711;Leucocitos granulosos;;3 - 10 por campo.
+711;Leucocitos granulosos;;   por campo.
 711;Pus;;ausencia
-711;Hematíes;;1 - 3 por campo.
-711;Mucus;;regular
+711;Hematíes;; por campo.
+711;Mucus;;escaso
 711;Gérmenes;;escasos
-711;Cilindros hialinos;;escasos
+711;Cilindros hialinos;;
+711;Uratos amorfos;;
+711;Ácido úrico;;
+711;Espermatozoides;;
+711;Oxalatos de calcio;;
