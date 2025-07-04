@@ -2,7 +2,7 @@ import ttkbootstrap as tb
 from ttkbootstrap.constants import *
 from tkinter import StringVar
 from logic.db import init_db
-from gui.widgets import ClienteFrame, AnalisisFrame
+from gui.widgets import AnalisisFrame
 
 def run_app():
     init_db()  # crea las tablas si no existen
@@ -13,10 +13,6 @@ def run_app():
 
     notebook = tb.Notebook(app, bootstyle="primary")
     notebook.pack(fill="both", expand=True, padx=10, pady=10)
-
-    # Pestaña de clientes
-    frame_clientes = ClienteFrame(notebook)
-    notebook.add(frame_clientes, text="Clientes")
 
     # Pestaña de análisis
     frame_analisis = AnalisisFrame(notebook)

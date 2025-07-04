@@ -6,85 +6,6 @@ from datetime import datetime, date
 from gui.subanalisis_modal import VentanaSubanalisis
 from logic.db import guardar_cliente, buscar_cliente_por_dni
 
-class ClienteFrame(tb.Frame):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.build_ui()
-
-    def build_ui(self):
-        self.var_dni = StringVar()
-        self.var_nombre = StringVar()
-        self.var_apellido = StringVar()
-        self.var_fecha_nac = StringVar()
-        self.var_edad = StringVar()
-
-        tb.Label(self, text="DNI").grid(row=0, column=0, sticky=W, padx=5, pady=5)
-        tb.Entry(self, textvariable=self.var_dni).grid(row=0, column=1, sticky=EW, padx=5, pady=5)
-
-        tb.Label(self, text="Nombre").grid(row=1, column=0, sticky=W, padx=5, pady=5)
-        tb.Entry(self, textvariable=self.var_nombre).grid(row=1, column=1, sticky=EW, padx=5, pady=5)
-
-        tb.Label(self, text="Apellido").grid(row=2, column=0, sticky=W, padx=5, pady=5)
-        tb.Entry(self, textvariable=self.var_apellido).grid(row=2, column=1, sticky=EW, padx=5, pady=5)
-
-        tb.Label(self, text="Fecha de nacimiento (YYYY-MM-DD)").grid(row=3, column=0, sticky=W, padx=5, pady=5)
-        tb.Entry(self, textvariable=self.var_fecha_nac).grid(row=3, column=1, sticky=EW, padx=5, pady=5)
-
-        tb.Label(self, textvariable=self.var_edad).grid(row=4, column=1, sticky=W, padx=5)
-
-        btn_guardar = tb.Button(self, text="Guardar Cliente", bootstyle="success", command=self.guardar)
-        btn_guardar.grid(row=5, column=0, padx=5, pady=10)
-
-        btn_buscar = tb.Button(self, text="Buscar por DNI", bootstyle="info", command=self.buscar)
-        btn_buscar.grid(row=5, column=1, padx=5, pady=10)
-
-        self.columnconfigure(1, weight=1)
-
-    def guardar(self):
-        dni = self.var_dni.get().strip()
-        nombre = self.var_nombre.get().strip()
-        apellido = self.var_apellido.get().strip()
-        fecha_nac = self.var_fecha_nac.get().strip()
-
-        if not dni or not nombre or not fecha_nac:
-            messagebox.showwarning("Campos obligatorios", "Debe completar DNI, nombre y fecha de nacimiento.")
-            return
-
-        try:
-            edad = self.calcular_edad(fecha_nac)
-            self.var_edad.set(f"Edad: {edad} años")
-
-            guardar_cliente(dni, nombre, apellido, fecha_nac)
-            messagebox.showinfo("Cliente guardado", f"Cliente {apellido}, {nombre} guardado correctamente.")
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo guardar: {str(e)}")
-
-    def buscar(self):
-        dni = self.var_dni.get().strip()
-        if not dni:
-            messagebox.showwarning("DNI requerido", "Ingrese un DNI para buscar.")
-            return
-        cliente = buscar_cliente_por_dni(dni)
-        if cliente:
-            self.var_nombre.set(cliente['nombre'])
-            self.var_apellido.set(cliente['apellido'])
-            self.var_fecha_nac.set(cliente['fecha_nacimiento'])
-            self.var_edad.set(f"Edad: {self.calcular_edad(cliente['fecha_nacimiento'])} años")
-        else:
-            messagebox.showinfo("No encontrado", "No se encontró ningún cliente con ese DNI.")
-            self.var_nombre.set("")
-            self.var_apellido.set("")
-            self.var_fecha_nac.set("")
-            self.var_edad.set("")
-
-    def calcular_edad(self, fecha_nac_str):
-        try:
-            fecha_nac = datetime.strptime(fecha_nac_str, "%Y-%m-%d").date()
-            hoy = date.today()
-            edad = hoy.year - fecha_nac.year - ((hoy.month, hoy.day) < (fecha_nac.month, fecha_nac.day))
-            return edad
-        except:
-            return "?"
 
 class AnalisisFrame(tb.Frame):
     def __init__(self, parent):
@@ -112,64 +33,76 @@ class AnalisisFrame(tb.Frame):
         self.var_codigo = StringVar()
         self.var_valor = StringVar()
         self.var_descripcion = StringVar()
+        self.var_nombre_apellido = StringVar()
 
         # Fila 0
         tb.Label(self, text="DNI del paciente").grid(row=0, column=0, sticky=W, padx=5, pady=5)
-        entry_dni = tb.Entry(self, textvariable=self.var_dni)
-        entry_dni.grid(row=0, column=1, sticky=EW, padx=5)
+        self.entry_dni = tb.Entry(self, textvariable=self.var_dni)
+        self.entry_dni.grid(row=0, column=1, sticky=EW, padx=5)
+        self.entry_dni.bind("<FocusOut>", self.verificar_dni)
 
         tb.Label(self, text="Protocolo").grid(row=0, column=2, sticky=W, padx=5, pady=5)
-        entry_protocolo = tb.Entry(self, textvariable=self.var_protocolo)
-        entry_protocolo.grid(row=0, column=3, sticky=EW, padx=5)
+        self.entry_protocolo = tb.Entry(self, textvariable=self.var_protocolo)
+        self.entry_protocolo.grid(row=0, column=3, sticky=EW, padx=5)
 
-        # Fila 1
-        tb.Label(self, text="Código de análisis").grid(row=1, column=0, sticky=W, padx=5, pady=5)
-        entry_codigo = tb.Entry(self, textvariable=self.var_codigo)
-        entry_codigo.grid(row=1, column=1, sticky=EW, padx=5)
-        entry_codigo.bind("<FocusOut>", self.verificar_codigo)
-
-        tb.Label(self, text="Doctor/a").grid(row=1, column=2, sticky=W, padx=5, pady=5)
-        entry_doctor = tb.Entry(self, textvariable=self.var_doctor)
-        entry_doctor.grid(row=1, column=3, sticky=EW, padx=5)
+        # Fila 1: nombre y apellido
+        self.lbl_nombre_apellido = tb.Label(self, textvariable=self.var_nombre_apellido, foreground="blue")
+        self.lbl_nombre_apellido.grid(row=1, column=1, sticky="w", padx=5, pady=(0, 5))
 
         # Fila 2
-        tb.Label(self, text="Valor").grid(row=2, column=0, sticky=W, padx=5, pady=5)
-        entry_valor = tb.Entry(self, textvariable=self.var_valor)
-        entry_valor.grid(row=2, column=1, sticky=EW, padx=5)
+        tb.Label(self, text="Código de análisis").grid(row=2, column=0, sticky=W, padx=5, pady=5)
+        self.entry_codigo = tb.Entry(self, textvariable=self.var_codigo)
+        self.entry_codigo.grid(row=2, column=1, sticky=EW, padx=5)
+        self.entry_codigo.bind("<FocusOut>", self.verificar_codigo)
 
-        tb.Label(self, text="Fecha de extracción (YYYY-MM-DD)").grid(row=2, column=2, sticky=W, padx=5, pady=5)
-        entry_fecha = tb.Entry(self, textvariable=self.var_fecha_extraccion)
-        entry_fecha.grid(row=2, column=3, sticky=EW, padx=5)
+        tb.Label(self, text="Doctor/a").grid(row=2, column=2, sticky=W, padx=5, pady=5)
+        self.entry_doctor = tb.Entry(self, textvariable=self.var_doctor)
+        self.entry_doctor.grid(row=2, column=3, sticky=EW, padx=5)
 
-        entry_dni.bind("<Tab>", lambda e: (entry_codigo.focus_set(), "break")[1])
-        entry_codigo.bind("<Tab>", lambda e: (entry_valor.focus_set(), "break")[1])
-        entry_valor.bind("<Tab>", lambda e: (entry_protocolo.focus_set(), "break")[1])
-        entry_protocolo.bind("<Tab>", lambda e: (entry_doctor.focus_set(), "break")[1])
-        entry_doctor.bind("<Tab>", lambda e: (entry_fecha.focus_set(), "break")[1])
+        # Fila 3
+        tb.Label(self, text="Valor").grid(row=3, column=0, sticky=W, padx=5, pady=5)
+        self.entry_valor = tb.Entry(self, textvariable=self.var_valor)
+        self.entry_valor.grid(row=3, column=1, sticky=EW, padx=5)
 
+        tb.Label(self, text="Fecha de extracción (YYYY-MM-DD)").grid(row=3, column=2, sticky=W, padx=5, pady=5)
+        self.entry_fecha = tb.Entry(self, textvariable=self.var_fecha_extraccion)
+        self.entry_fecha.grid(row=3, column=3, sticky=EW, padx=5)
+
+        # Descripción análisis
         self.lbl_desc = tb.Label(self, textvariable=self.var_descripcion, foreground="blue")
-        self.lbl_desc.grid(row=3, column=0, columnspan=2, sticky=W, padx=5)
+        self.lbl_desc.grid(row=4, column=0, columnspan=2, sticky=W, padx=5)
 
-        tb.Button(self, text="Agregar a la lista", bootstyle="primary", command=self.agregar_analisis).grid(row=4, column=0, columnspan=2, pady=10)
+        # Botón agregar
+        tb.Button(self, text="Agregar a la lista", bootstyle="primary", command=self.agregar_analisis).grid(row=5, column=0, columnspan=2, pady=10)
 
-        # --- Tabla
-        self.tree = tb.Treeview(self, columns=("Código", "Descripción"), show="headings", height=10)
+        # Treeview tabla
+        self.tree = tb.Treeview(self, columns=("codigo", "descripcion"), show="headings", height=10)
+        self.tree.heading("codigo", text="Código", anchor="w")
+        self.tree.heading("descripcion", text="Descripción", anchor="w")
+        self.tree.column("codigo", anchor="w", width=100)
+        self.tree.column("descripcion", anchor="w", width=300)
+        self.tree.grid(row=6, column=0, columnspan=4, sticky="nsew", padx=5, pady=(0, 10))
+
         self.menu_ctx = tb.Menu(self, tearoff=0)
         self.menu_ctx.add_command(label="Eliminar análisis", command=self.eliminar_analisis)
-
         self.tree.bind("<Button-3>", self.mostrar_menu_contextual)
-        for col in self.tree["columns"]:
-            self.tree.heading(col, text=col)
-            self.tree.column(col, anchor="w", stretch=True)
-        self.tree.grid(row=5, column=0, columnspan=2, sticky="nsew", padx=5)
 
-        # --- Botón imprimir
-        tb.Button(self, text="Imprimir informe", bootstyle="success", command=self.imprimir_informe).grid(row=6, column=0, columnspan=2, pady=10)
+        # Botón imprimir
+        tb.Button(self, text="Imprimir informe", bootstyle="success", command=self.imprimir_informe).grid(row=7, column=0, columnspan=2, pady=10)
 
+        # Expandir columnas
         self.columnconfigure(1, weight=1)
-        self.rowconfigure(5, weight=1)
+        self.columnconfigure(3, weight=1)
+        self.rowconfigure(6, weight=1)
 
+        # Orden manual de TAB (columna por columna)
 
+        self.entry_dni.bind("<Tab>", lambda e: (self.entry_codigo.focus_set(), "break")[1])
+        self.entry_codigo.bind("<Tab>", lambda e: (self.entry_valor.focus_set(), "break")[1])
+        self.entry_valor.bind("<Tab>", lambda e: (self.entry_protocolo.focus_set(), "break")[1])
+        self.entry_protocolo.bind("<Tab>", lambda e: (self.entry_doctor.focus_set(), "break")[1])
+        self.entry_doctor.bind("<Tab>", lambda e: (self.entry_fecha.focus_set(), "break")[1])
+        self.entry_fecha.bind("<Tab>", lambda e: (self.entry_dni.focus_set(), "break")[1])
 
     def actualizar_descripcion(self, *args):
         codigo = self.var_codigo.get().strip()
@@ -376,3 +309,28 @@ class AnalisisFrame(tb.Frame):
 
     # Eliminar de la lista
         self.lista_analisis = [a for a in self.lista_analisis if a['codigo'] != codigo]
+
+    
+    def verificar_dni(self, event=None):
+        dni = self.var_dni.get().strip()
+        if not dni:
+            return
+
+        paciente = buscar_cliente_por_dni(dni)
+        if paciente:
+            nombre = paciente.get("nombre", "")
+            apellido = paciente.get("apellido", "")
+            self.var_nombre_apellido.set(f"→ {nombre} {apellido}")
+            self.paciente_data = paciente
+        else:
+            from gui.nuevo_paciente_modal import VentanaNuevoPaciente
+            modal = VentanaNuevoPaciente(self, dni)
+            self.wait_window(modal)
+            if modal.resultado:
+                self.var_dni.set(modal.resultado["dni"])
+                self.var_nombre_apellido.set(f"→ {modal.resultado['nombre']} {modal.resultado['apellido']}")
+                self.paciente_data = modal.resultado
+            else:
+                self.var_dni.set("")
+                self.var_nombre_apellido.set("")
+                self.paciente_data = None
