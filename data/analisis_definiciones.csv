@@ -9,3 +9,10 @@ codigo;descripcion;tecnica;valores_referencia;unidades
 1040;Colesterol LDL.;Técnica fotométrica de Burstein.;Sospechoso a partir de 1,50 g/l. Elevado a partir de 1,90;g/l
 193;Clearence de creatinina,;;80 - 140;ml/minuto.
 711;orina;;;
+876;Dosaje de triglicéridos.;Técnica fotométrica enzimática.;"Hasta 30 años 0,10 - 1,40 g/l
+30 - 40 años 0,10 - 1,50 g/l
+más de 40 años 0,10 - 1,60 g/l";g/l
+546;IONOGRAMA;;;mEq/l
+1035;Colesterol HDL.;;;g/l
+865;TSH - TIROTROFINA;Método: Quimioluminiscencia;Adultos de 0,27 a 4,20;mU/l
+1070;HEMOGLOBINA GLICOSILADA HBA1C; Método: Inmunologico - Turbidimétrico; Valor de referencia: de 4,2 a 5,9%;%

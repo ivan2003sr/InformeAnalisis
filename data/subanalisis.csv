@@ -35,3 +35,6 @@ codigo_padre;nombre_subanalisis;valores_referencia;valor_por_defecto
 711;Ácido úrico;;
 711;Espermatozoides;;
 711;Oxalatos de calcio;;
+546;Sodio;Normal: 135 - 150 mEq/l;
+546;Potasio;Normal: 3,5 - 5,0 mEq/l;
+546;Cloro;Normal: 95 - 105 mEq/l;

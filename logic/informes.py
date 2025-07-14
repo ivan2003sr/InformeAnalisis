@@ -129,7 +129,7 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
     pdf.set_font('Arial', '', 9)
     pdf.write(4, "DNI: ")
     pdf.set_font('Arial', 'B', 9)
-    pdf.write(4, f"{paciente['dni']} ")
+    pdf.write(4, f"{formatear_valor(paciente['dni'])} ")
     pdf.set_font('Arial', '', 9)
     pdf.write(4, "Edad: ")
     pdf.set_font('Arial', 'B', 9)
@@ -147,43 +147,41 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
 
     pdf.ln(10)
 
+    CODIGOS_ESPECIALES = {
+    "hemograma": "475",
+    "orina": "711",
+    "ionograma": "546",
+    "hdl": "1035",
+    "hba1c": "1070"
+    }
 
-    hemograma = [a for a in lista_analisis if a['codigo'] == "475"]
-    orina = [a for a in lista_analisis if a['codigo'] == "711"]
-    otros = [a for a in lista_analisis if a['codigo'] not in ("475", "711")]
+# Extracción de análisis especiales
+    analisis_especiales = {
+        nombre: [a for a in lista_analisis if a['codigo'] == cod]
+        for nombre, cod in CODIGOS_ESPECIALES.items()
+    }
 
-    
-    if orina:
-        pdf.check_page_break(30)
-        pdf.set_font('Times', 'BU', 12)
-        pdf.cell(0, 8, "ANÁLISIS DE ORINA", ln=1)
+# Resto de los análisis
+    otros = [
+        a for a in lista_analisis
+        if a['codigo'] not in CODIGOS_ESPECIALES.values()
+    ]
 
-        grupos = agrupar_orina_por_seccion(orina)
+    hemograma = analisis_especiales["hemograma"]
+    orina = analisis_especiales["orina"]
+    ionograma = analisis_especiales["ionograma"]
+    colesterolHDL = analisis_especiales["hdl"]
+    hemoglobinaGlicosilada = analisis_especiales["hba1c"]
 
-        for titulo, items in grupos.items():
-            pdf.check_page_break(15 + len(items) * 3)
-            pdf.set_font('Times', 'BU', 11)
-            pdf.cell(0, 6, titulo, ln=1)
-
-            pdf.set_font('Courier', '', 10)
-            for item in items:
-                desc = item['descripcion'].strip()
-                valor = formatear_valor(item['valor'])
-
-                puntos = '.' * max(3, 30 - len(desc))
-                texto = f"{desc} {puntos}  "
-
-                pdf.set_font('Courier', '', 10)
-                pdf.write(4, texto)
-
-                pdf.set_font('Courier', 'B', 10)
-                pdf.write(4, f"{valor}\n")
-
-        pdf.ln(4)
+    def dibujar_separador(pdf):
+            pdf.ln(1)
+            y = pdf.get_y()
+            pdf.line(10, y, 200, y)
+            pdf.ln(1)
 
     if hemograma:
         pdf.check_page_break(30)
-        pdf.set_font('Times', 'BU', 12)
+        pdf.set_font('Arial', 'BU', 11)
         pdf.cell(0, 8, "HEMOGRAMA", ln=1)
 
         grupos = agrupar_hemograma_por_seccion(hemograma)
@@ -194,21 +192,21 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
             pdf.check_page_break(15 + len(items) * 3)
             # TITULARES
             if titulo == "SERIE ROJA":
-                pdf.set_font('Times', 'BU', 11)
-                pdf.set_font('Times', 'BU', 11)
+                pdf.set_font('Arial', 'BU', 10)
+                pdf.set_font('Arial', 'BU', 10)
                 pdf.cell(75, 7, "SERIE ROJA", 0, 0, 'L')
                 pdf.cell(20, 7, "VALORES", 0, 0, 'R')  # espacio vacío para columna valor (que no tiene encabezado)
                 pdf.cell(75, 7, "VALORES NORMALES", 0, 1, 'C')
             elif titulo == "SERIE BLANCA":
-                pdf.set_font('Times', 'BU', 11)
+                pdf.set_font('Arial', 'BU', 10)
                 pdf.cell(0, 4, titulo, ln=1)
             elif titulo.startswith("FÓRMULA LEUCOCITARIA"):
                 if not ya_mostro_formula:
-                    pdf.set_font('Times', 'BU', 11)
+                    pdf.set_font('Arial', 'BU', 10)
                     pdf.cell(0, 4, "FÓRMULA LEUCOCITARIA", ln=1)
                     ya_mostro_formula = True
                 subtitulo = titulo.split(" - ")[1]
-                pdf.set_font('Times', 'BU', 10)
+                pdf.set_font('Arial', 'BU', 9)
                 pdf.cell(0, 3, subtitulo, ln=1)
 
             # DETALLES
@@ -256,32 +254,167 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
                 
                 pdf.set_font('Courier', '', 10)
                 pdf.cell(ancho_ref, 3, alinear_referencia(ref), 0, 1, 'C')
-
             pdf.ln(3)
+        dibujar_separador(pdf)
+    
 
+    if ionograma:
+        pdf.check_page_break(30)
+        pdf.set_font('Arial', 'BU', 11)
+        pdf.cell(0, 8, "IONOGRAMA", ln=1)
+        pdf.set_font('Courier', '', 10)
+        for item in ionograma:
+            desc = item['descripcion'].strip()
+            valor = formatear_valor(item['valor'])
+            ref = item['referencia'].strip()
+            
+            puntos = '.' * max(3, 20 - len(desc))
+            texto = f"{desc} {puntos}  "
 
+            pdf.set_font('Courier', '', 10)
+            pdf.write(4, texto)
+
+            pdf.set_font('Courier', 'B', 10)
+            pdf.write(4, f"{valor} mEq/l - ")
+
+            if ref:
+                pdf.set_font('Courier', '', 10)
+                pdf.write(4, f"{ref}\n")
+        dibujar_separador(pdf)
+
+    if colesterolHDL:
+        pdf.check_page_break(60)
+        
+        valor_hdl = formatear_valor(colesterolHDL[0]['valor'])
+        unidades = colesterolHDL[0]['unidades']
+
+        # Título principal
+        pdf.set_font('Arial', 'BU', 10)
+        pdf.cell(0, 8, f"Colesterol HDL: ", ln=1)
+        pdf.set_font('Arial', 'B', 10)
+        pdf.cell(0,8,f"Valores obtenidos: {valor_hdl} {unidades}.")
+
+        pdf.ln(2)
+
+        # Título "NORMALES"
+        pdf.set_font('Arial', 'BU', 10)
+        pdf.cell(0, 6, "NORMALES", ln=1, align='C')
+
+        # Encabezado de columnas
+        col1_w = 80
+        col2_w = 40
+        col3_w = 40
+
+        pdf.set_font('Courier', 'B', 10)
+        pdf.cell(col1_w, 4, "", 0, 0)
+        pdf.cell(col2_w, 4, "HOMBRES", 0, 0, 'L')
+        pdf.cell(col3_w, 4, "MUJERES", 0, 1, 'L')
+
+        # Datos
+        pdf.set_font('Courier', '', 10)
+        filas = [
+            ("Pronóstico favorable", "Mayor a 0,55 g/l", "Mayor a 0,65 g/l"),
+            ("Riesgo standard", "De 0,35 a 0,55 g/l", "De 0,45 a 0,65 g/l"),
+            ("Indicador de riesgo", "Menor de 0,35 g/l", "Menor de 0,45 g/l"),
+            ("Niños hasta 19 años", "De 0,32 a 0,62 g/l", "")
+        ]
+
+        for desc, hombres, mujeres in filas:
+            texto_ancho = pdf.get_string_width(desc)
+            espacio_restante = col1_w - texto_ancho
+            ancho_punto = pdf.get_string_width('.')
+            num_puntos = max(3, int(espacio_restante / ancho_punto))
+            puntos = '.' * num_puntos
+            texto_punteado = f"{desc} {puntos}"
+
+            pdf.cell(col1_w, 4, texto_punteado, 0, 0, 'L')
+            pdf.cell(col2_w, 4, hombres, 0, 0, 'L')
+            pdf.cell(col3_w, 4, mujeres, 0, 1, 'L')
+        dibujar_separador(pdf)
+
+    if hemoglobinaGlicosilada:
+        pdf.check_page_break(30)
+        
+        valor_hba1c = formatear_valor(hemoglobinaGlicosilada[0]['valor'])
+        unidades = hemoglobinaGlicosilada[0]['unidades']
+
+        pdf.set_font('Arial', 'BU', 10)
+        pdf.cell(0, 4, f"HEMOGLOBINA GLICOSILADA (HBA1C).", ln=1)
+        pdf.set_font('Arial', 'B', 8)
+        pdf.cell(0, 4, f"Resultado: {valor_hba1c} {unidades}.", ln=1)
+        pdf.set_font('Arial', '', 8)
+        pdf.cell(0, 4, f"{hemoglobinaGlicosilada[0]['tecnica']}. {hemoglobinaGlicosilada[0]['valores_referencia']}.", ln=1)
+        pdf.cell(0, 4, "Tabla de equivalencias de Hemoglobina Glicada, al valor teórico promedio ", ln=1)
+        pdf.cell(0, 4, "de glucemia de los últimos 40 a 45 días.", ln=1)
+
+        pdf.set_font('Courier', 'B', 8)
+        col1_w = 60
+        col2_w = 40
+        altura_fila = 4
+        pdf.cell(col1_w, altura_fila, "GLUCEMIA PROMEDIO [g/l]", 0, 0, 'L')
+        pdf.cell(col2_w, altura_fila, "Hb A1c [%]", 0, 1, 'L')
+
+        # Datos
+        pdf.set_font('Courier', '', 8)
+        tabla_equivalencias = [
+            ("0,6", "4"),
+            ("0,9", "5"),
+            ("1,2", "6"),
+            ("1,5", "7"),
+            ("1,8", "8"),
+            ("2,1", "9"),
+            ("2,4", "10"),
+            ("2,7", "11"),
+            ("3,0", "12"),
+        ]
+
+        for glucemia, hba1c in tabla_equivalencias:
+            pdf.cell(col1_w, altura_fila, glucemia, 0, 0, 'C')
+            pdf.cell(col2_w, altura_fila, hba1c, 0, 1, 'C')
+
+        dibujar_separador(pdf)
+
+    if orina:
+        pdf.check_page_break(30)
+        pdf.set_font('Arial', 'BU', 11)
+        pdf.cell(0, 8, "ANÁLISIS DE ORINA", ln=1)
+
+        grupos = agrupar_orina_por_seccion(orina)
+
+        for titulo, items in grupos.items():
+            pdf.check_page_break(15 + len(items) * 3)
+            pdf.set_font('Arial', 'B', 10)
+            pdf.cell(0, 6, titulo, ln=1)
+
+            pdf.set_font('Courier', '', 10)
+            for item in items:
+                desc = item['descripcion'].strip()
+                valor = formatear_valor(item['valor'])
+
+                puntos = '.' * max(3, 30 - len(desc))
+                texto = f"{desc} {puntos}  "
+
+                pdf.set_font('Courier', '', 10)
+                pdf.write(4, texto)
+
+                pdf.set_font('Courier', 'B', 10)
+                pdf.write(4, f"{valor}\n")
+        dibujar_separador(pdf)
 
     # Otros análisis
     if otros:
         
         pdf.ln(5)
-        def dibujar_separador(pdf):
-            pdf.ln(1)
-            y = pdf.get_y()
-            pdf.line(10, y, 200, y)
-            pdf.ln(1)
-
-        fill = False
         for analisis in otros:
             pdf.check_page_break(20)
 
 
             dibujar_separador(pdf)
-            pdf.set_font('Arial', '', 11)
+            pdf.set_font('Arial', '', 10)
             # Obtener datos del análisis
             descripcion = analisis['descripcion'].strip()
             tecnica = analisis['tecnica'].strip()
-            valor = analisis['valor'].strip()
+            valor = formatear_valor(analisis['valor']).strip()
             ref = analisis['valores_referencia'].strip()
             unidades = analisis['unidades'].strip() 
             codigo = analisis['codigo'].strip()
@@ -293,13 +426,21 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
 
             if codigo == "1040":
                 linea2_html = f"Resultado: {valor_html} - {normal_html}"
+            elif "\n" in ref:
+            # Multilínea: usar formato especial "Contiene" con saltos
+                linea2_html = f"Contiene: {valor_html} - Normal: {escape(ref.splitlines()[0].strip())}."
+
+                for linea in ref.splitlines()[1:]:
+                    if linea.strip():
+                        linea2_html += f"<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{escape(linea)}."
+             
             else:
                 linea2_html = f"Resultado: {valor_html} - Normal: {normal_html}"
 
             pdf.multi_cell(0, 4, linea1, 0, 'L')
-            pdf.write_html(f"<font face='Arial' size='11'>{linea2_html}</font>")
+            pdf.write_html(f"<font face='Arial' size='10'>{linea2_html}</font>")
             pdf.ln(2)
-
+        dibujar_separador(pdf)
 
     # Firma
     pdf.ln(15)

@@ -1,6 +1,6 @@
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
-from tkinter import StringVar
+from tkinter import BooleanVar, StringVar
 from tkinter import messagebox
 from datetime import datetime, date
 from gui.subanalisis_modal import VentanaSubanalisis
@@ -87,6 +87,9 @@ class AnalisisFrame(tb.Frame):
         self.menu_ctx.add_command(label="Eliminar análisis", command=self.eliminar_analisis)
         self.tree.bind("<Button-3>", self.mostrar_menu_contextual)
 
+        from tkinter import BooleanVar
+        self.generar_word = BooleanVar(value=False)
+        tb.Checkbutton(self, text="Generar Word", variable=self.generar_word).grid(row=7, column=3, columnspan=2, sticky="w", padx=5)
         # Botón imprimir
         tb.Button(self, text="Imprimir informe", bootstyle="success", command=self.imprimir_informe).grid(row=7, column=0, columnspan=2, pady=10)
 
@@ -202,7 +205,7 @@ class AnalisisFrame(tb.Frame):
 
 
         paciente['edad'] = self.calcular_edad(paciente['fecha_nacimiento'])
-        generar_pdf_informe(
+        archivo_pdf = generar_pdf_informe(
             paciente=paciente,
             lista_analisis=self.lista_analisis,
             protocolo=protocolo,
@@ -213,6 +216,17 @@ class AnalisisFrame(tb.Frame):
         self.lista_analisis.clear()
         for item in self.tree.get_children():
             self.tree.delete(item)
+
+        if self.generar_word.get():
+            try:
+                from pdf2docx import Converter
+                docx_path = archivo_pdf.replace('.pdf', '.docx')
+                cv = Converter(archivo_pdf)
+                cv.convert(docx_path, start=0, end=None)
+                cv.close()
+                print(f"Archivo Word generado en: {docx_path}")
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo generar el Word: {e}")
 
     def calcular_edad(self, fecha_nac_str):
         try:
