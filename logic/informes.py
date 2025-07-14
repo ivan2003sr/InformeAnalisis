@@ -148,11 +148,13 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
     pdf.ln(10)
 
     CODIGOS_ESPECIALES = {
-    "hemograma": "475",
+    "hemograma":"475",
     "orina": "711",
     "ionograma": "546",
     "hdl": "1035",
-    "hba1c": "1070"
+    "hba1c": "1070",
+    "betaCuant": "1175",
+    "proteinograma": "nose"
     }
 
 # Extracción de análisis especiales
@@ -162,16 +164,16 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
     }
 
 # Resto de los análisis
-    otros = [
-        a for a in lista_analisis
-        if a['codigo'] not in CODIGOS_ESPECIALES.values()
-    ]
+    todos_codigos_especiales = set(CODIGOS_ESPECIALES.values())
+    otros = [a for a in lista_analisis if a['codigo'] not in todos_codigos_especiales]
 
     hemograma = analisis_especiales["hemograma"]
     orina = analisis_especiales["orina"]
     ionograma = analisis_especiales["ionograma"]
     colesterolHDL = analisis_especiales["hdl"]
     hemoglobinaGlicosilada = analisis_especiales["hba1c"]
+    betaCuant = analisis_especiales["betaCuant"]
+    proteinograma = analisis_especiales["proteinograma"]
 
     def dibujar_separador(pdf):
             pdf.ln(1)
@@ -259,9 +261,10 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
     
 
     if ionograma:
+        descripcion = "IONOGRAMA"
         pdf.check_page_break(30)
         pdf.set_font('Arial', 'BU', 11)
-        pdf.cell(0, 8, "IONOGRAMA", ln=1)
+        pdf.cell(0, 8, f"{descripcion}", ln=1)
         pdf.set_font('Courier', '', 10)
         for item in ionograma:
             desc = item['descripcion'].strip()
@@ -342,17 +345,18 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
         pdf.cell(0, 4, f"HEMOGLOBINA GLICOSILADA (HBA1C).", ln=1)
         pdf.set_font('Arial', 'B', 8)
         pdf.cell(0, 4, f"Resultado: {valor_hba1c} {unidades}.", ln=1)
-        pdf.set_font('Arial', '', 8)
+        
         pdf.cell(0, 4, f"{hemoglobinaGlicosilada[0]['tecnica']}. {hemoglobinaGlicosilada[0]['valores_referencia']}.", ln=1)
+        pdf.set_font('Arial', '', 8)
         pdf.cell(0, 4, "Tabla de equivalencias de Hemoglobina Glicada, al valor teórico promedio ", ln=1)
-        pdf.cell(0, 4, "de glucemia de los últimos 40 a 45 días.", ln=1)
+        pdf.cell(0, 4, "       de glucemia de los últimos 40 a 45 días.", ln=1)
 
         pdf.set_font('Courier', 'B', 8)
         col1_w = 60
         col2_w = 40
         altura_fila = 4
-        pdf.cell(col1_w, altura_fila, "GLUCEMIA PROMEDIO [g/l]", 0, 0, 'L')
-        pdf.cell(col2_w, altura_fila, "Hb A1c [%]", 0, 1, 'L')
+        pdf.cell(col1_w, altura_fila, "GLUCEMIA PROMEDIO [g/l]", 0, 0, 'C')
+        pdf.cell(col2_w, altura_fila, "Hb A1c [%]", 0, 1, 'C')
 
         # Datos
         pdf.set_font('Courier', '', 8)
@@ -399,6 +403,89 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
 
                 pdf.set_font('Courier', 'B', 10)
                 pdf.write(4, f"{valor}\n")
+        dibujar_separador(pdf)
+
+    if betaCuant:
+        pdf.check_page_break(30)
+        
+        valor_beta = formatear_valor(betaCuant[0]['valor'])
+        unidades = betaCuant[0]['unidades']
+        descripcion = betaCuant[0]['descripcion']
+        tecnica = betaCuant[0]['tecnica'].strip()
+
+        pdf.set_font('Arial', 'B', 9)
+        pdf.cell(0, 4, f"{descripcion}", ln=1)
+        pdf.set_font('Arial', 'B', 8)
+        pdf.cell(0, 4, f"Valor obtenido: {valor_beta} {unidades}", ln=1)
+        pdf.set_font('Arial', '', 8)
+        pdf.cell(0,4, f"{tecnica}.", ln=1)
+
+        pdf.set_font('Arial', 'BU', 8)
+        pdf.cell(0, 8, "Tabla de valores de referencia", ln=1)
+    
+# Encabezado
+        pdf.set_font('Arial', 'B', 7)
+        pdf.set_fill_color(220, 220, 220)  # Gris claro para encabezado
+        pdf.cell(30, 4, "Etapa", border=1, align='C', fill=True)
+        pdf.cell(30, 4, "Valores en [UI/l]", border=1, align='C', fill=True)
+
+        pdf.ln()
+
+# Datos de la tabla
+        filas = [
+            ("No embarazada", "Hasta 5"),
+            ("4ta. Semana", "40 - 4.800"),
+            ("5ta. Semana", "270 - 28.700"),
+            ("6ta. Semana", "3.700 - 84.900"),
+            ("7ma. semana", "9.700 - 120.000"),
+            ("8va. semana", "31.100 - 184.000"),
+            ("9na. semana", "61.000 - 152.000"),
+            ("10a. semana", "22.000 - 143.000"),
+            ("14a. semana", "14.300 - 75.800"),
+            ("15a. semana", "12.300 - 60.300"),
+            ("16a. semana", "8.800 - 54.500"),
+            ("17a. semana", "8.100 - 51.300"),
+            ("18a. semana", "3.900 - 49.400"),
+            ("19a. semana", "3.600 - 56.600"),
+        ]
+
+        pdf.set_font('Courier', '', 7)
+        for etapa, valores in filas:
+            pdf.cell(30, 3, etapa, border=1, align='C')
+            pdf.cell(30, 3, valores, border=1, align='C')
+
+            pdf.ln()
+
+        pdf.set_font('Arial', '', 7)
+        pdf.cell(0, 3, "No embarazadas: hasta 5 UI/l", ln=1)
+        pdf.cell(0, 3, "Hombres: hasta 2 UI/l", ln=1)
+        dibujar_separador(pdf)
+
+    if proteinograma:
+
+        descripcion = "PROTEINOGRAMA"
+        pdf.check_page_break(30)
+        pdf.set_font('Arial', 'BU', 11)
+        pdf.cell(0, 8, f"{descripcion}", ln=1)
+        pdf.set_font('Courier', '', 10)
+        for item in proteinograma:
+            desc = item['descripcion'].strip()
+            valor = formatear_valor(item['valor'])
+            ref = item['referencia'].strip()
+            
+            puntos = '.' * max(3, 20 - len(desc))
+            texto = f"{desc} {puntos}  "
+
+            pdf.set_font('Courier', '', 10)
+            pdf.write(4, texto)
+
+            pdf.set_font('Courier', 'B', 10)
+            pdf.write(4, f"{valor} g/dl ")
+
+            if ref:
+                pdf.set_font('Courier', '', 10)
+                pdf.write(4, f"{ref}\n")
+        pdf.ln(4)
         dibujar_separador(pdf)
 
     # Otros análisis

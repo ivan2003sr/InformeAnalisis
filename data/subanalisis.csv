@@ -38,3 +38,7 @@ codigo_padre;nombre_subanalisis;valores_referencia;valor_por_defecto
 546;Sodio;Normal: 135 - 150 mEq/l;
 546;Potasio;Normal: 3,5 - 5,0 mEq/l;
 546;Cloro;Normal: 95 - 105 mEq/l;
+nose;Proteínas totales;Normal: 6,1 - 7,9 g/dl;
+nose;Albúmina;Normal: 3,5 - 4,8 g/dl;
+nose;Globulinas;Normal: 2,6 - 3,1 g/dl;
+nose;Relación A/G;;
