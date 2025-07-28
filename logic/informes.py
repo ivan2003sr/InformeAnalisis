@@ -9,6 +9,7 @@ from logic.detalle.otros_analisis import OtrosAnalisisHandler
 from logic.detalle.hemograma import HemogramaHandler
 from logic.detalle.orina import OrinaHandler
 from logic.detalle.proteinograma import ProteinogramaHandler
+from logic.detalle.colesterolLDL import ColesterolLdlHandler
 locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')  # Configurar locale para Argentina
 from datetime import datetime
 from fpdf import FPDF, HTMLMixin
@@ -119,6 +120,7 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
     "orina": "711",
     "ionograma": "546",
     "hdl": "1035",
+    "ldl": "1040",
     "hba1c": "1070",
     "betaCuant": "1175",
     "proteinograma": "nose"
@@ -141,6 +143,7 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
     hemoglobinaGlicosilada = analisis_especiales["hba1c"]
     betaCuant = analisis_especiales["betaCuant"]
     proteinograma = analisis_especiales["proteinograma"]
+    colesterolLDL = analisis_especiales["ldl"]
 
     def dibujar_separador(pdf):
             pdf.ln(1)
@@ -157,6 +160,9 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
 
     colesterolHdl_handler = ColesterolHdlHandler(pdf, formatear_valor, dibujar_separador)
     colesterolHdl_handler.imprimir_colesterol_hdl(colesterolHDL)
+
+    colesterolLdl_handler = ColesterolLdlHandler(pdf, formatear_valor, dibujar_separador)
+    colesterolLdl_handler.imprimir_colesterol_ldl(colesterolLDL)
 
     hemoglobina_glicosilada_handler = HemoglobinaGlicosiladaHandler(pdf, formatear_valor, dibujar_separador)
     hemoglobina_glicosilada_handler.imprimir_hemoglobina_glicosilada(hemoglobinaGlicosilada)

@@ -10,6 +10,9 @@ codigo_padre;nombre_subanalisis;valores_referencia;valor_por_defecto
 475;Granulocitos basófilos;0 - 1;
 475;Linfocitos;10 - 30;
 475;Monocitos;4 - 8;
+546;Sodio;Normal: 135 - 150 mEq/l;
+546;Potasio;Normal: 3,5 - 5,0 mEq/l;
+546;Cloro;Normal: 95 - 105 mEq/l;
 711;Color;;amarillo
 711;Aspecto;;límpido
 711;Espuma;;blanca
@@ -35,9 +38,6 @@ codigo_padre;nombre_subanalisis;valores_referencia;valor_por_defecto
 711;Ácido úrico;;
 711;Espermatozoides;;
 711;Oxalatos de calcio;;
-546;Sodio;Normal: 135 - 150 mEq/l;
-546;Potasio;Normal: 3,5 - 5,0 mEq/l;
-546;Cloro;Normal: 95 - 105 mEq/l;
 nose;Proteínas totales;Normal: 6,1 - 7,9 g/dl;
 nose;Albúmina;Normal: 3,5 - 4,8 g/dl;
 nose;Globulinas;Normal: 2,6 - 3,1 g/dl;

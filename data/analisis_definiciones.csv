@@ -1,20 +1,20 @@
 codigo;descripcion;tecnica;valores_referencia;unidades
+15;Albúminas;;3,5 - 4,8;g/dl
+192;Dosaje de creatinina.;Técnica fotométrica de Owens.;0,80 - 1,40;mg/dL
+193;Clearence de creatinina,;;80 - 140;ml/minuto.
 412;Dosaje de glucosa.; Técnica fotométrica enzimática de la glucosa oxidasa.;0,70-1,10;g/l
 475;hemograma;;;
-902;Dosaje de urea.;Técnica fotométrica enzimática de la ureasa de Fawcet.;0,15-0,45;g/l
-192;Dosaje de creatinina.;Técnica fotométrica de Owens.;0,80 - 1,40;mg/dL
-746;Plaquetas;;250.000 - 500.000;u/l
-15;Albúminas;;3,5 - 4,8;g/dl
-904;Dosaje de ácido úrico.;Técnica fotométrica enzimática.;Hombres 2,5 - 6,0 mg/dL. Mujeres 1,5 - 5,0;mg/dL
-1040;Colesterol LDL.;Técnica fotométrica de Burstein.;Sospechoso a partir de 1,50 g/l. Elevado a partir de 1,90;g/l
-193;Clearence de creatinina,;;80 - 140;ml/minuto.
+546;IONOGRAMA;;;mEq/l
 711;orina;;;
+746;Plaquetas;;250.000 - 500.000;u/l
+865;TSH - TIROTROFINA;Método: Quimioluminiscencia;Adultos de 0,27 a 4,20;mU/l
 876;Dosaje de triglicéridos.;Técnica fotométrica enzimática.;"Hasta 30 años 0,10 - 1,40 g/l
 30 - 40 años 0,10 - 1,50 g/l
 más de 40 años 0,10 - 1,60 g/l";g/l
-546;IONOGRAMA;;;mEq/l
+902;Dosaje de urea.;Técnica fotométrica enzimática de la ureasa de Fawcet.;0,15-0,45;g/l
+904;Dosaje de ácido úrico.;Técnica fotométrica enzimática.;Hombres 2,5 - 6,0 mg/dL. Mujeres 1,5 - 5,0;mg/dL
 1035;Colesterol HDL.;;;g/l
-865;TSH - TIROTROFINA;Método: Quimioluminiscencia;Adultos de 0,27 a 4,20;mU/l
+1040;Colesterol LDL.;Técnica fotométrica de Burstein.;Sospechoso a partir de 1,50 g/l. Elevado a partir de 1,90;g/l
 1070;HEMOGLOBINA GLICOSILADA HBA1C; Método: Inmunologico - Turbidimétrico; Valor de referencia: de 4,2 a 5,9%;%
 1175;SUB-UNIDAD BETA DE LA GONADOTROFINA CORIONICA HUMANA;Método: Quimioluminiscencia;;UI/l
 nose;PROTEINOGRAMA. Determinación colorimétrica de proteínas totales y albúminas;;;g/dl

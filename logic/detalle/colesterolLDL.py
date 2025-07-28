@@ -1,17 +1,17 @@
 from html import escape
 
-class OtrosAnalisisHandler:
+class ColesterolLdlHandler:
     def __init__(self, pdf_instance, formatear_valor_func, dibujar_separador):
         self.pdf = pdf_instance
         self.formatear_valor = formatear_valor_func
         self.dibujar_separador = dibujar_separador
 
-    def imprimir_otros_analisis(self, lista_otros_analisis):
-        if not lista_otros_analisis:
+    def imprimir_colesterol_ldl(self, lista_colesterol_ldl):
+        if not lista_colesterol_ldl:
             return
         self.pdf.ln(5)
 
-        for analisis in lista_otros_analisis:
+        for analisis in lista_colesterol_ldl:
             self.pdf.check_page_break(20)
 
             self.dibujar_separador(self.pdf)
@@ -29,18 +29,7 @@ class OtrosAnalisisHandler:
             
             valor_html = f"<b>{escape(valor)} {escape(unidades)}</b>"
             normal_html = f"{escape(ref)} {escape(unidades)}"
-
-            if codigo == "nose2":
-                linea2_html = f"Contiene: {valor_html} - {normal_html}"
-            elif "\n" in ref:
-                linea2_html = f"Contiene: {valor_html} - Normal: {escape(ref.splitlines()[0].strip())}."
-
-                for linea in ref.splitlines()[1:]:
-                    if linea.strip():
-                        linea2_html += f"<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{escape(linea)}."
-             
-            else:
-                linea2_html = f"Resultado: {valor_html} - Normal: {normal_html}"
+            linea2_html = f"Resultado: {valor_html} - {normal_html}"
 
             self.pdf.write_html(f"<font face='Arial' size='10'>{linea1}</font>")
             self.pdf.write_html(f"<font face='Arial' size='10'>{linea2_html}</font>")

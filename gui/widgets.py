@@ -1,28 +1,21 @@
 import ttkbootstrap as tb
+import os
 from ttkbootstrap.constants import *
-from tkinter import BooleanVar, StringVar
+from tkinter import StringVar
 from tkinter import messagebox
 from datetime import datetime, date
 from gui.subanalisis_modal import VentanaSubanalisis
-from logic.db import guardar_cliente, buscar_cliente_por_dni
-
-
-class AnalisisFrame(tb.Frame):
-    def __init__(self, parent):
-        super().__init__(parent)
-        tb.Label(self, text="(Aquí irá la interfaz de análisis)").pack(pady=20)
-
-
 from logic.db import buscar_cliente_por_dni
 from logic.analisis import cargar_analisis_csv, cargar_subanalisis_csv
-from logic.informes import generar_pdf_informe
+from tkinter import BooleanVar
 
 class AnalisisFrame(tb.Frame):
     def __init__(self, parent):
         super().__init__(parent)
         self.analisis_info = cargar_analisis_csv()
         self.subanalisis_info = cargar_subanalisis_csv()
-        self.lista_analisis = []
+        # Ahora lista_analisis almacenará diccionarios con un 'iid' para referencia con el Treeview
+        self.lista_analisis = [] 
         self.var_protocolo = StringVar()
         self.var_doctor = StringVar()
         self.var_fecha_extraccion = StringVar()
@@ -53,7 +46,7 @@ class AnalisisFrame(tb.Frame):
         tb.Label(self, text="Código de análisis").grid(row=2, column=0, sticky=W, padx=5, pady=5)
         self.entry_codigo = tb.Entry(self, textvariable=self.var_codigo)
         self.entry_codigo.grid(row=2, column=1, sticky=EW, padx=5)
-        self.entry_codigo.bind("<FocusOut>", self.verificar_codigo)
+        self.entry_codigo.bind("<FocusOut>", self.verificar_codigo) # Se activa al salir del campo
 
         tb.Label(self, text="Doctor/a").grid(row=2, column=2, sticky=W, padx=5, pady=5)
         self.entry_doctor = tb.Entry(self, textvariable=self.var_doctor)
@@ -75,21 +68,27 @@ class AnalisisFrame(tb.Frame):
         # Botón agregar
         tb.Button(self, text="Agregar a la lista", bootstyle="primary", command=self.agregar_analisis).grid(row=5, column=0, columnspan=2, pady=10)
 
-        # Treeview tabla
-        self.tree = tb.Treeview(self, columns=("codigo", "descripcion"), show="headings", height=10)
+        # Treeview tabla - Mantenemos todas las columnas para una vista detallada interna
+        # pero para el "padre" de subanálisis, solo mostraremos código y descripción principal.
+        self.tree = tb.Treeview(self, columns=("codigo", "descripcion", "valor", "referencia"), show="headings", height=10)
         self.tree.heading("codigo", text="Código", anchor="w")
         self.tree.heading("descripcion", text="Descripción", anchor="w")
-        self.tree.column("codigo", anchor="w", width=100)
-        self.tree.column("descripcion", anchor="w", width=300)
+        self.tree.heading("valor", text="Valor", anchor="w")
+        self.tree.heading("referencia", text="Referencia", anchor="w")
+        self.tree.column("codigo", anchor="w", width=80)
+        self.tree.column("descripcion", anchor="w", width=250)
+        self.tree.column("valor", anchor="w", width=100)
+        self.tree.column("referencia", anchor="w", width=150)
         self.tree.grid(row=6, column=0, columnspan=4, sticky="nsew", padx=5, pady=(0, 10))
 
+        # Menú contextual para eliminar
         self.menu_ctx = tb.Menu(self, tearoff=0)
         self.menu_ctx.add_command(label="Eliminar análisis", command=self.eliminar_analisis)
-        self.tree.bind("<Button-3>", self.mostrar_menu_contextual)
+        self.tree.bind("<Button-3>", self.mostrar_menu_contextual) # Botón derecho del ratón
 
-        from tkinter import BooleanVar
         self.generar_word = BooleanVar(value=False)
         tb.Checkbutton(self, text="Generar Word", variable=self.generar_word).grid(row=7, column=3, columnspan=2, sticky="w", padx=5)
+        
         # Botón imprimir
         tb.Button(self, text="Imprimir informe", bootstyle="success", command=self.imprimir_informe).grid(row=7, column=0, columnspan=2, pady=10)
 
@@ -99,7 +98,6 @@ class AnalisisFrame(tb.Frame):
         self.rowconfigure(6, weight=1)
 
         # Orden manual de TAB (columna por columna)
-
         self.entry_dni.bind("<Tab>", lambda e: (self.entry_codigo.focus_set(), "break")[1])
         self.entry_codigo.bind("<Tab>", lambda e: (self.entry_valor.focus_set(), "break")[1])
         self.entry_valor.bind("<Tab>", lambda e: (self.entry_protocolo.focus_set(), "break")[1])
@@ -107,20 +105,21 @@ class AnalisisFrame(tb.Frame):
         self.entry_doctor.bind("<Tab>", lambda e: (self.entry_fecha.focus_set(), "break")[1])
         self.entry_fecha.bind("<Tab>", lambda e: (self.entry_dni.focus_set(), "break")[1])
 
-    def actualizar_descripcion(self, *args):
+    def verificar_codigo(self, event=None):
         codigo = self.var_codigo.get().strip()
         if not codigo:
             self.var_descripcion.set("")
             return
+
         if codigo not in self.analisis_info:
             from gui.definir_codigo_modal import AgregarCodigoModal
             modal = AgregarCodigoModal(self, codigo)
             self.wait_window(modal)
+            self.entry_codigo.focus_set() 
 
             if modal.resultado:
                 from logic.analisis import guardar_nuevo_codigo
                 guardar_nuevo_codigo(**modal.resultado)
-                # Guardar TODOS los campos en analisis_info
                 self.analisis_info[codigo] = {
                     "descripcion": modal.resultado["descripcion"],
                     "tecnica": modal.resultado.get("tecnica", ""),
@@ -130,9 +129,78 @@ class AnalisisFrame(tb.Frame):
                 self.var_descripcion.set(f"→ {modal.resultado['descripcion']}")
             else:
                 self.var_descripcion.set("Código no reconocido.")
+                return 
         else:
             desc = self.analisis_info[codigo]["descripcion"]
             self.var_descripcion.set(f"→ {desc}")
+
+        # Si el código tiene subanálisis, abrir la ventana de subanálisis
+        if codigo in self.subanalisis_info:
+            subanals = self.subanalisis_info[codigo]
+            
+            # Preparar valores precargados si ya existen para este código
+            valores_precargados = []
+            # Necesitamos buscar los valores precargados del "padre"
+            # y los subanálisis asociados a ese padre.
+            # Identificamos el item "padre" en el treeview para obtener los sub-items asociados.
+            padre_iid_existente = None
+            for item in self.tree.get_children():
+                if self.tree.item(item, 'values')[0] == codigo and self.tree.item(item, 'tags') == ('padre_subanalisis',):
+                    padre_iid_existente = item
+                    break
+
+            if padre_iid_existente:
+                # Si el padre ya existe, sus "hijos" en lista_analisis son los subanálisis
+                # Filtramos self.lista_analisis por el código y la propiedad 'es_subanalisis': True
+                subanalisis_cargados = [a for a in self.lista_analisis if a['codigo'] == codigo and a.get('es_subanalisis', False)]
+                # Mapear los valores a la misma estructura que subanals para precarga
+                for sub_def in subanals:
+                    encontrado = next((sa for sa in subanalisis_cargados if sa['descripcion'] == sub_def['nombre']), None)
+                    valores_precargados.append(encontrado['valor'] if encontrado else "")
+            else:
+                valores_precargados = [""] * len(subanals)
+
+
+            modal = VentanaSubanalisis(self, codigo, subanals, valores_precargados)
+            self.wait_window(modal)
+
+            if modal.resultado:
+                # Si el padre ya existe en el Treeview, lo eliminamos para reinsertarlo
+                if padre_iid_existente:
+                    self.tree.delete(padre_iid_existente)
+                    # No es necesario eliminar de lista_analisis aquí, ya que se hará al reinsertar los hijos.
+
+                # Eliminar todos los subanálisis existentes de este código de lista_analisis
+                self.lista_analisis = [a for a in self.lista_analisis if not (a['codigo'] == codigo and a.get('es_subanalisis', False))]
+                
+                # Insertar el "padre" en el Treeview
+                desc_padre = self.analisis_info[codigo]["descripcion"]
+                # Usa un tag para identificar este como un "padre" de subanálisis
+                iid_padre = self.tree.insert("", "end", values=(codigo, desc_padre, "[Ver subanálisis]", ""), tags=('padre_subanalisis',))
+
+                # Agregar cada subanálisis a self.lista_analisis (no al Treeview directamente)
+                for i, val in enumerate(modal.resultado):
+                    if not val.strip():
+                        continue
+                    sub = subanals[i]
+                    analisis_item = {
+                        'codigo': codigo,
+                        'descripcion': sub['nombre'],
+                        'valor': val,
+                        'referencia': sub['valores_referencia'],
+                        'tecnica': self.analisis_info[codigo].get("tecnica", ""),
+                        'unidades': self.analisis_info[codigo].get("unidades", ""),
+                        'es_subanalisis': True, # Marca para identificar que es un subanálisis
+                        'padre_iid': iid_padre # Referencia al padre en el Treeview
+                    }
+                    self.lista_analisis.append(analisis_item)
+            
+            # Limpiar campos después de procesar el subanálisis
+            self.var_codigo.set("")
+            self.var_valor.set("") 
+            self.var_descripcion.set("")
+            self.entry_codigo.focus_set()
+
 
     def agregar_analisis(self):
         codigo = self.var_codigo.get().strip()
@@ -141,50 +209,48 @@ class AnalisisFrame(tb.Frame):
         if not codigo:
             messagebox.showwarning("Datos requeridos", "Debe ingresar un código de análisis.")
             return
+
         analisis_data = self.analisis_info.get(codigo, {})
         desc = analisis_data.get("descripcion", "Sin descripción")
         tecnica = analisis_data.get("tecnica", "")
         ref = analisis_data.get("valores_referencia", "-")
         unidades = analisis_data.get("unidades", "")
 
-        # Si tiene subanálisis, mostrar modal
+        # Si tiene subanálisis, ya se manejó en verificar_codigo,
+        # así que aquí no se debería poder agregar directamente.
         if codigo in self.subanalisis_info:
-            subanals = self.subanalisis_info[codigo]
-            modal = VentanaSubanalisis(self, codigo, subanals)
-            self.wait_window(modal)
+            messagebox.showinfo("Información", "Este código es un análisis principal con sub-análisis. Por favor, asegúrese de que el foco esté en el campo 'Código' y presione TAB o haga clic fuera para abrir el asistente de sub-análisis.")
             self.entry_codigo.focus_set()
+            return
 
-            if modal.resultado:
-                for sub, val in zip(subanals, modal.resultado):
-                    if not val.strip():
-                        continue
-                    self.lista_analisis.append({
-                        'codigo': codigo,
-                        'descripcion': sub['nombre'],
-                        'valor': val,
-                        'referencia': sub['valores_referencia']
-                    })
-                    self.tree.insert("", "end", values=(codigo, sub['nombre']))
-        else:
-            if not valor:
-                messagebox.showwarning("Dato requerido", "Debe ingresar el valor del análisis.")
-                return
-            
-            self.eliminar_analisis_por_codigo(codigo)
-            self.lista_analisis.append({
-                'codigo': codigo,
-                'descripcion': desc,
-                'tecnica': tecnica,
-                'valor': valor,
-                'referencia': ref,
-                'unidades': unidades,
-                'valores_referencia': ref 
-            })
-            self.tree.insert("", "end", values=(codigo, desc))
+        # Para análisis sin subanálisis (simple)
+        if not valor:
+            messagebox.showwarning("Dato requerido", "Debe ingresar el valor del análisis.")
+            return
+        
+        # Antes de agregar, si ya existe un análisis simple con este código, lo reemplazamos
+        # Se elimina la entrada anterior para este código (si existe y no es parte de un subanálisis ya agrupado).
+        self._eliminar_analisis_simple_por_codigo(codigo)
+
+        analisis_item = {
+            'codigo': codigo,
+            'descripcion': desc,
+            'tecnica': tecnica,
+            'valor': valor,
+            'referencia': ref,
+            'unidades': unidades,
+            'valores_referencia': ref 
+        }
+        # Inserta en el Treeview y guarda el iid
+        iid = self.tree.insert("", "end", values=(codigo, desc, valor, ref))
+        analisis_item['iid'] = iid # Asigna el iid al diccionario de análisis
+        self.lista_analisis.append(analisis_item)
 
         self.var_codigo.set("")
         self.var_valor.set("")
         self.var_descripcion.set("")
+        self.entry_codigo.focus_set() 
+
 
     def imprimir_informe(self):
         from logic.informes import generar_pdf_informe
@@ -193,16 +259,18 @@ class AnalisisFrame(tb.Frame):
         doctor = self.var_doctor.get().strip()
         fecha_extraccion = self.var_fecha_extraccion.get().strip() or datetime.today().strftime('%Y-%m-%d')
 
-        if not dni or not self.lista_analisis:
-            messagebox.showwarning("Datos faltantes", "Debe ingresar un DNI válido y al menos un análisis.")
+        if not dni:
+            messagebox.showwarning("Datos faltantes", "Debe ingresar un DNI válido.")
+            return
+        
+        if not self.lista_analisis:
+            messagebox.showwarning("Datos faltantes", "Debe agregar al menos un análisis.")
             return
 
         paciente = buscar_cliente_por_dni(dni)
         if not paciente:
             messagebox.showerror("Paciente no encontrado", "El DNI ingresado no está registrado.")
             return
-
-
 
         paciente['edad'] = self.calcular_edad(paciente['fecha_nacimiento'])
         archivo_pdf = generar_pdf_informe(
@@ -213,9 +281,19 @@ class AnalisisFrame(tb.Frame):
             fecha_extraccion=fecha_extraccion
         )
 
+        # Limpiar la interfaz después de imprimir
         self.lista_analisis.clear()
         for item in self.tree.get_children():
             self.tree.delete(item)
+        self.var_dni.set("")
+        self.var_nombre_apellido.set("")
+        self.var_protocolo.set("")
+        self.var_doctor.set("")
+        self.var_fecha_extraccion.set("")
+        self.var_codigo.set("")
+        self.var_valor.set("")
+        self.var_descripcion.set("")
+        self.entry_dni.focus_set() 
 
         if self.generar_word.get():
             try:
@@ -224,7 +302,7 @@ class AnalisisFrame(tb.Frame):
                 cv = Converter(archivo_pdf)
                 cv.convert(docx_path, start=0, end=None)
                 cv.close()
-                print(f"Archivo Word generado en: {docx_path}")
+                messagebox.showinfo("Conversión Word", f"Archivo Word generado en: {os.path.basename(docx_path)}")
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo generar el Word: {e}")
 
@@ -238,96 +316,92 @@ class AnalisisFrame(tb.Frame):
             return "?"
         
     def mostrar_menu_contextual(self, event):
-        selected = self.tree.identify_row(event.y)
-        if selected:
-            self.tree.selection_set(selected)
+        selected_iid = self.tree.identify_row(event.y)
+        if selected_iid:
+            self.tree.selection_set(selected_iid) 
             self.menu_ctx.post(event.x_root, event.y_root)
 
     def eliminar_analisis(self):
-        selected = self.tree.selection()
-        if not selected:
+        selected_iids = self.tree.selection() 
+        if not selected_iids:
             return
-        for item in selected:
-            valores = self.tree.item(item, "values")
-            codigo = valores[0]
-            descripcion = valores[1]
-            self.lista_analisis = [
-                a for a in self.lista_analisis
-                if not (a['codigo'] == codigo and a['descripcion'] == descripcion)
-            ]
-            self.tree.delete(item)
-
-    def verificar_codigo(self, event=None):
-        codigo = self.var_codigo.get().strip()
-        if not codigo:
-            self.var_descripcion.set("")
+        
+        confirm = messagebox.askyesno("Confirmar eliminación", "¿Está seguro de que desea eliminar el/los análisis seleccionado(s)?")
+        if not confirm:
             return
 
-        if codigo not in self.analisis_info:
-            from gui.definir_codigo_modal import AgregarCodigoModal
-            modal = AgregarCodigoModal(self, codigo)
-            self.wait_window(modal)
-            self.entry_codigo.focus_set()
-
-            if modal.resultado:
-                from logic.analisis import guardar_nuevo_codigo
-                guardar_nuevo_codigo(**modal.resultado)
-                self.analisis_info[codigo] = {
-                    "descripcion": modal.resultado["descripcion"],
-                    "valores_referencia": modal.resultado["valores_referencia"]
-                }
-                self.var_descripcion.set(f"→ {modal.resultado['descripcion']}")
+        # Para cada iid seleccionado en el Treeview
+        for iid_to_delete in selected_iids:
+            # Obtener los valores del elemento seleccionado
+            item_values = self.tree.item(iid_to_delete, 'values')
+            codigo_seleccionado = item_values[0]
+            
+            # Verificar si es un "padre_subanalisis"
+            item_tags = self.tree.item(iid_to_delete, 'tags')
+            if 'padre_subanalisis' in item_tags:
+                # Si es un padre, eliminar todos los subanálisis asociados a ese código
+                self.lista_analisis = [
+                    a for a in self.lista_analisis 
+                    if not (a['codigo'] == codigo_seleccionado and a.get('es_subanalisis', False))
+                ]
+                self.tree.delete(iid_to_delete) # Eliminar solo el padre del Treeview
             else:
-                self.var_descripcion.set("Código no reconocido.")
-                return
-        else:
-            desc = self.analisis_info[codigo]["descripcion"]
-            self.var_descripcion.set(f"→ {desc}")
+                # Si es un análisis simple (no un padre de subanálisis), eliminarlo por su iid
+                self.lista_analisis = [
+                    a for a in self.lista_analisis 
+                    if a.get('iid') != iid_to_delete
+                ]
+                self.tree.delete(iid_to_delete)
 
-        if codigo in self.subanalisis_info:
-            subanals = self.subanalisis_info[codigo]
-            # Buscar si ya se cargó este código
-            valores_precargados = []
-            for sub in subanals:
-                encontrado = next((a for a in self.lista_analisis
-                                if a['codigo'] == codigo and a['descripcion'] == sub['nombre']), None)
-                valores_precargados.append(encontrado['valor'] if encontrado else "")
 
-            modal = VentanaSubanalisis(self, codigo, subanals, valores_precargados)
-            self.wait_window(modal)
+        messagebox.showinfo("Eliminación", "Análisis(s) eliminado(s) correctamente.")
 
-            if modal.resultado:
-                self.eliminar_analisis_por_codigo(codigo)
-                for sub, val in zip(subanals, modal.resultado):
-                    if not val.strip():
-                        continue
-                    self.lista_analisis.append({
-                        'codigo': codigo,
-                        'descripcion': sub['nombre'],
-                        'valor': val,
-                        'referencia': sub['valores_referencia']
-                    })
-                self.tree.insert("", "end", values=(codigo, sub['nombre'], val, sub['valores_referencia']))
+    # Se elimina la función _eliminar_analisis_por_codigo ya que la lógica ahora está en eliminar_analisis y _eliminar_analisis_simple_por_codigo
 
-                # Limpiar campos
-                self.var_codigo.set("")
-                self.var_valor.set("")
-                self.var_descripcion.set("")
+    def _eliminar_analisis_simple_por_codigo(self, codigo_a_eliminar):
+        """
+        Elimina un análisis simple (no subanálisis ni padre de subanálisis) 
+        asociado a un código específico. Se usa para reemplazarlo si ya existe.
+        """
+        iids_to_delete = []
+        new_lista_analisis = []
 
-    def eliminar_analisis_por_codigo(self, codigo):
-    # Eliminar del Treeview
-        for item in self.tree.get_children():
-            valores = self.tree.item(item, "values")
-            if valores[0] == codigo:
-                self.tree.delete(item)
-
-    # Eliminar de la lista
-        self.lista_analisis = [a for a in self.lista_analisis if a['codigo'] != codigo]
-
-    
+        for analisis_item in self.lista_analisis:
+            # Un análisis simple es aquel cuyo código coincide Y NO es_subanalisis
+            # y cuyo código NO es un padre de subanálisis (porque el padre no se elimina así)
+            if analisis_item['codigo'] == codigo_a_eliminar and not analisis_item.get('es_subanalisis', False):
+                # Además, verificamos que no sea la entrada "padre" en el Treeview
+                # (aunque la lógica del 'padre_iid' debería evitar esto)
+                # La mejor forma es que no tenga el tag 'padre_subanalisis' en el Treeview.
+                # Sin embargo, esta función solo se llama para reemplazar, no para eliminar "padres".
+                
+                # Buscamos el iid correspondiente en el Treeview para eliminarlo
+                # Esta búsqueda es necesaria porque un análisis simple puede haber sido reinsertado
+                # con un nuevo iid si se reemplazó antes.
+                found_in_tree = False
+                for item_tree_iid in self.tree.get_children():
+                    tree_values = self.tree.item(item_tree_iid, 'values')
+                    if tree_values[0] == analisis_item['codigo'] and tree_values[1] == analisis_item['descripcion']:
+                        iids_to_delete.append(item_tree_iid)
+                        found_in_tree = True
+                        break # Asumimos que solo hay un item simple por código
+                
+                # Si no se encontró en el treeview, es porque fue eliminado previamente
+                # o es un item "huérfano" que no se mostró.
+            else:
+                new_lista_analisis.append(analisis_item)
+        
+        self.lista_analisis = new_lista_analisis
+        
+        for iid in set(iids_to_delete): # Usar set para evitar duplicados si la misma lógica marca el mismo iid
+            if self.tree.exists(iid):
+                self.tree.delete(iid)
+                
     def verificar_dni(self, event=None):
         dni = self.var_dni.get().strip()
         if not dni:
+            self.var_nombre_apellido.set("") 
+            self.paciente_data = None
             return
 
         paciente = buscar_cliente_por_dni(dni)
@@ -345,6 +419,6 @@ class AnalisisFrame(tb.Frame):
                 self.var_nombre_apellido.set(f"→ {modal.resultado['nombre']} {modal.resultado['apellido']}")
                 self.paciente_data = modal.resultado
             else:
-                self.var_dni.set("")
+                self.var_dni.set("") 
                 self.var_nombre_apellido.set("")
                 self.paciente_data = None
