@@ -1,7 +1,3 @@
-import os
-from collections import defaultdict
-from html import escape
-
 def agrupar_hemograma_por_seccion(analisis):
     grupos = {
         "SERIE ROJA": [],

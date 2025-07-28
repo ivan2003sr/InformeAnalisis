@@ -1,7 +1,3 @@
-import os
-from html import escape
-from fpdf import FPDF
-
 class IonogramaHandler:
     def __init__(self, pdf_instance, formatear_valor_func, dibujar_separador):
         self.pdf = pdf_instance
@@ -9,6 +5,8 @@ class IonogramaHandler:
         self.dibujar_separador = dibujar_separador
 
     def imprimir_ionograma(self, lista_ionograma):
+        if not lista_ionograma:
+            return
         descripcion = "IONOGRAMA"
         self.pdf.check_page_break(30)
         self.pdf.set_font('Arial', 'BU', 11)

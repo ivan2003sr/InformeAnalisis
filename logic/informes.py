@@ -12,9 +12,7 @@ from logic.detalle.proteinograma import ProteinogramaHandler
 locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')  # Configurar locale para Argentina
 from datetime import datetime
 from fpdf import FPDF, HTMLMixin
-from html import escape
 import webbrowser
-from collections import defaultdict
 
 class PDF(FPDF, HTMLMixin):
 
@@ -41,13 +39,6 @@ class PDF(FPDF, HTMLMixin):
         if self.y + threshold > self.page_break_trigger:
             self.add_page()
 
-def format_fecha(fecha_str):
-    try:
-        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d')
-        return fecha_obj.strftime('%d/%m/%Y')
-    except:
-        return fecha_str
-    
 def formatear_valor(valor):
     try:
         num = float(valor)
@@ -61,6 +52,13 @@ def formatear_valor(valor):
 def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extraccion):
     
     from collections import defaultdict
+
+    def format_fecha(fecha_str):
+        try:
+            fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d')
+            return fecha_obj.strftime('%d/%m/%Y')
+        except:
+            return fecha_str
     
     fecha_impresion = datetime.now().strftime('%d/%m/%Y')
     fecha_extraccion_fmt = format_fecha(fecha_extraccion)
@@ -150,40 +148,30 @@ def generar_pdf_informe(paciente, lista_analisis, protocolo, doctor, fecha_extra
             pdf.line(10, y, 200, y)
             pdf.ln(1)
 
-    if hemograma:
-        hemograma_handler = HemogramaHandler(pdf, formatear_valor, dibujar_separador)
-        hemograma_handler.imprimir_hemograma(hemograma)
+  
+    hemograma_handler = HemogramaHandler(pdf, formatear_valor, dibujar_separador)
+    hemograma_handler.imprimir_hemograma(hemograma)
     
+    ionograma_handler = IonogramaHandler(pdf, formatear_valor, dibujar_separador)
+    ionograma_handler.imprimir_ionograma(ionograma)
 
-    if ionograma:
-        ionograma_handler = IonogramaHandler(pdf, formatear_valor, dibujar_separador)
-        ionograma_handler.imprimir_ionograma(ionograma)
+    colesterolHdl_handler = ColesterolHdlHandler(pdf, formatear_valor, dibujar_separador)
+    colesterolHdl_handler.imprimir_colesterol_hdl(colesterolHDL)
 
-    if colesterolHDL:
-        colesterolHdl_handler = ColesterolHdlHandler(pdf, formatear_valor, dibujar_separador)
-        colesterolHdl_handler.imprimir_colesterol_hdl(colesterolHDL)
+    hemoglobina_glicosilada_handler = HemoglobinaGlicosiladaHandler(pdf, formatear_valor, dibujar_separador)
+    hemoglobina_glicosilada_handler.imprimir_hemoglobina_glicosilada(hemoglobinaGlicosilada)
 
-    if hemoglobinaGlicosilada:
-        hemoglobina_glicosilada_handler = HemoglobinaGlicosiladaHandler(pdf, formatear_valor, dibujar_separador)
-        hemoglobina_glicosilada_handler.imprimir_hemoglobina_glicosilada(hemoglobinaGlicosilada)
+    orina_handler = OrinaHandler(pdf, formatear_valor, dibujar_separador)
+    orina_handler.imprimir_orina(orina)
 
-    if orina:
-        orina_handler = OrinaHandler(pdf, formatear_valor, dibujar_separador)
-        orina_handler.imprimir_orina(orina)
+    beta_cuant_handler = BetaCuantHandler(pdf, formatear_valor, dibujar_separador)
+    beta_cuant_handler.imprimir_beta_cuant(betaCuant)
 
-    if betaCuant:
-        beta_cuant_handler = BetaCuantHandler(pdf, formatear_valor, dibujar_separador)
-        beta_cuant_handler.imprimir_beta_cuant(betaCuant)
-        
+    proteinograma_handler = ProteinogramaHandler(pdf, formatear_valor, dibujar_separador)
+    proteinograma_handler.imprimir_proteinograma(proteinograma)
 
-    if proteinograma:
-        proteinograma_handler = ProteinogramaHandler(pdf, formatear_valor, dibujar_separador)
-        proteinograma_handler.imprimir_proteinograma(proteinograma)
-
-    # Otros análisis
-    if otros:
-        otros_analisis_handler = OtrosAnalisisHandler(pdf, formatear_valor, dibujar_separador)
-        otros_analisis_handler.imprimir_otros_analisis(otros)
+    otros_analisis_handler = OtrosAnalisisHandler(pdf, formatear_valor, dibujar_separador)
+    otros_analisis_handler.imprimir_otros_analisis(otros)
 
     # Firma
     pdf.ln(15)

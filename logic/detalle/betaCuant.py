@@ -1,7 +1,3 @@
-import os
-from html import escape
-from fpdf import FPDF
-
 class BetaCuantHandler:
     def __init__(self, pdf_instance, formatear_valor_func, dibujar_separador):
         self.pdf = pdf_instance

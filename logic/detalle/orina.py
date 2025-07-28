@@ -1,7 +1,3 @@
-import os
-from html import escape
-from fpdf import FPDF
-
 def agrupar_orina_por_seccion(analisis):
     grupos = {
         "EXAMEN FÍSICO": [],
